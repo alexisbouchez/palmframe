@@ -13,7 +13,7 @@ const RIGHT_MIN = 250
 const RIGHT_MAX = 450
 const RIGHT_DEFAULT = 320
 
-function App() {
+function App(): React.JSX.Element {
   const { currentThreadId, loadThreads, createThread, setSettingsOpen } = useAppStore()
   const [isLoading, setIsLoading] = useState(true)
   const [leftWidth, setLeftWidth] = useState(LEFT_DEFAULT)
@@ -48,13 +48,16 @@ function App() {
   }, [])
 
   // Keyboard shortcuts
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Cmd+, for settings
-    if ((e.metaKey || e.ctrlKey) && e.key === ',') {
-      e.preventDefault()
-      setSettingsOpen(true)
-    }
-  }, [setSettingsOpen])
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Cmd+, for settings
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault()
+        setSettingsOpen(true)
+      }
+    },
+    [setSettingsOpen]
+  )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -62,7 +65,7 @@ function App() {
   }, [handleKeyDown])
 
   useEffect(() => {
-    async function init() {
+    async function init(): Promise<void> {
       try {
         await loadThreads()
         // Create a default thread if none exist
