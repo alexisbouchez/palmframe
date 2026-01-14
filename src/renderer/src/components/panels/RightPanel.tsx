@@ -1,5 +1,28 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { ListTodo, FolderTree, GitBranch, ChevronRight, ChevronDown, CheckCircle2, Circle, Clock, XCircle, GripHorizontal, Download, FolderSync, Loader2, Check, Folder, FolderOpen, File, FileText, FileCode, FileJson, Image, FileType } from 'lucide-react'
+import {
+  ListTodo,
+  FolderTree,
+  GitBranch,
+  ChevronRight,
+  ChevronDown,
+  CheckCircle2,
+  Circle,
+  Clock,
+  XCircle,
+  GripHorizontal,
+  Download,
+  FolderSync,
+  Loader2,
+  Check,
+  Folder,
+  FolderOpen,
+  File,
+  FileText,
+  FileCode,
+  FileJson,
+  Image,
+  FileType
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
 import { Badge } from '@/components/ui/badge'
@@ -19,18 +42,24 @@ interface SectionHeaderProps {
   onToggle: () => void
 }
 
-function SectionHeader({ title, icon: Icon, badge, isOpen, onToggle }: SectionHeaderProps) {
+function SectionHeader({
+  title,
+  icon: Icon,
+  badge,
+  isOpen,
+  onToggle
+}: SectionHeaderProps): React.JSX.Element {
   return (
     <button
       onClick={onToggle}
       className="flex items-center gap-2 px-3 py-2.5 text-section-header hover:bg-background-interactive transition-colors shrink-0 w-full"
       style={{ height: HEADER_HEIGHT }}
     >
-      <ChevronRight 
+      <ChevronRight
         className={cn(
-          "size-3.5 text-muted-foreground transition-transform duration-200",
-          isOpen && "rotate-90"
-        )} 
+          'size-3.5 text-muted-foreground transition-transform duration-200',
+          isOpen && 'rotate-90'
+        )}
       />
       <Icon className="size-4" />
       <span className="flex-1 text-left">{title}</span>
@@ -45,31 +74,34 @@ interface ResizeHandleProps {
   onDrag: (delta: number) => void
 }
 
-function ResizeHandle({ onDrag }: ResizeHandleProps) {
+function ResizeHandle({ onDrag }: ResizeHandleProps): React.JSX.Element {
   const startYRef = useRef<number>(0)
-  
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    startYRef.current = e.clientY
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      // Calculate total delta from drag start
-      const totalDelta = e.clientY - startYRef.current
-      onDrag(totalDelta)
-    }
-    
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-    
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-    document.body.style.cursor = 'row-resize'
-    document.body.style.userSelect = 'none'
-  }, [onDrag])
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      startYRef.current = e.clientY
+
+      const handleMouseMove = (e: MouseEvent): void => {
+        // Calculate total delta from drag start
+        const totalDelta = e.clientY - startYRef.current
+        onDrag(totalDelta)
+      }
+
+      const handleMouseUp = (): void => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'row-resize'
+      document.body.style.userSelect = 'none'
+    },
+    [onDrag]
+  )
 
   return (
     <div
@@ -82,19 +114,19 @@ function ResizeHandle({ onDrag }: ResizeHandleProps) {
   )
 }
 
-export function RightPanel() {
+export function RightPanel(): React.JSX.Element {
   const { todos, workspaceFiles, subagents } = useAppStore()
   const containerRef = useRef<HTMLDivElement>(null)
-  
+
   const [tasksOpen, setTasksOpen] = useState(true)
   const [filesOpen, setFilesOpen] = useState(true)
   const [agentsOpen, setAgentsOpen] = useState(true)
-  
+
   // Store content heights in pixels (null = auto/equal distribution)
   const [tasksHeight, setTasksHeight] = useState<number | null>(null)
   const [filesHeight, setFilesHeight] = useState<number | null>(null)
   const [agentsHeight, setAgentsHeight] = useState<number | null>(null)
-  
+
   // Track drag start heights
   const dragStartHeights = useRef<{ tasks: number; files: number; agents: number } | null>(null)
 
@@ -102,14 +134,14 @@ export function RightPanel() {
   const getAvailableContentHeight = useCallback(() => {
     if (!containerRef.current) return 0
     const totalHeight = containerRef.current.clientHeight
-    
+
     // Subtract headers (always visible)
     let used = HEADER_HEIGHT * 3
-    
+
     // Subtract handles (only between open panels)
     if (tasksOpen && (filesOpen || agentsOpen)) used += HANDLE_HEIGHT
     if (filesOpen && agentsOpen) used += HANDLE_HEIGHT
-    
+
     return Math.max(0, totalHeight - used)
   }, [tasksOpen, filesOpen, agentsOpen])
 
@@ -117,127 +149,141 @@ export function RightPanel() {
   const getContentHeights = useCallback(() => {
     const available = getAvailableContentHeight()
     const openCount = [tasksOpen, filesOpen, agentsOpen].filter(Boolean).length
-    
+
     if (openCount === 0) {
       return { tasks: 0, files: 0, agents: 0 }
     }
-    
+
     const defaultHeight = available / openCount
-    
+
     return {
       tasks: tasksOpen ? (tasksHeight ?? defaultHeight) : 0,
       files: filesOpen ? (filesHeight ?? defaultHeight) : 0,
-      agents: agentsOpen ? (agentsHeight ?? defaultHeight) : 0,
+      agents: agentsOpen ? (agentsHeight ?? defaultHeight) : 0
     }
-  }, [getAvailableContentHeight, tasksOpen, filesOpen, agentsOpen, tasksHeight, filesHeight, agentsHeight])
+  }, [
+    getAvailableContentHeight,
+    tasksOpen,
+    filesOpen,
+    agentsOpen,
+    tasksHeight,
+    filesHeight,
+    agentsHeight
+  ])
 
   // Handle resize between tasks and the next open section
-  const handleTasksResize = useCallback((totalDelta: number) => {
-    if (!dragStartHeights.current) {
-      const heights = getContentHeights()
-      dragStartHeights.current = { ...heights }
-    }
-    
-    const start = dragStartHeights.current
-    const available = getAvailableContentHeight()
-    
-    // Determine which panel is being resized against
-    const otherStart = filesOpen ? start.files : start.agents
-    
-    // Calculate new heights with proper clamping
-    let newTasksHeight = start.tasks + totalDelta
-    let newOtherHeight = otherStart - totalDelta
-    
-    // Clamp both to min height
-    if (newTasksHeight < MIN_CONTENT_HEIGHT) {
-      newTasksHeight = MIN_CONTENT_HEIGHT
-      newOtherHeight = otherStart + (start.tasks - MIN_CONTENT_HEIGHT)
-    }
-    if (newOtherHeight < MIN_CONTENT_HEIGHT) {
-      newOtherHeight = MIN_CONTENT_HEIGHT
-      newTasksHeight = start.tasks + (otherStart - MIN_CONTENT_HEIGHT)
-    }
-    
-    // Ensure total doesn't exceed available (accounting for third panel if open)
-    const thirdPanelHeight = filesOpen && agentsOpen ? (agentsHeight ?? (available / 3)) : 0
-    const maxForTwo = available - thirdPanelHeight
-    if (newTasksHeight + newOtherHeight > maxForTwo) {
-      const excess = (newTasksHeight + newOtherHeight) - maxForTwo
-      if (totalDelta > 0) {
-        newOtherHeight = Math.max(MIN_CONTENT_HEIGHT, newOtherHeight - excess)
-      } else {
-        newTasksHeight = Math.max(MIN_CONTENT_HEIGHT, newTasksHeight - excess)
+  const handleTasksResize = useCallback(
+    (totalDelta: number) => {
+      if (!dragStartHeights.current) {
+        const heights = getContentHeights()
+        dragStartHeights.current = { ...heights }
       }
-    }
-    
-    setTasksHeight(newTasksHeight)
-    if (filesOpen) {
-      setFilesHeight(newOtherHeight)
-    } else if (agentsOpen) {
-      setAgentsHeight(newOtherHeight)
-    }
-    
-    // Auto-collapse if below threshold
-    if (newTasksHeight < COLLAPSE_THRESHOLD) {
-      setTasksOpen(false)
-    }
-    if (newOtherHeight < COLLAPSE_THRESHOLD) {
-      if (filesOpen) setFilesOpen(false)
-      else if (agentsOpen) setAgentsOpen(false)
-    }
-  }, [getContentHeights, getAvailableContentHeight, filesOpen, agentsOpen, agentsHeight])
+
+      const start = dragStartHeights.current
+      const available = getAvailableContentHeight()
+
+      // Determine which panel is being resized against
+      const otherStart = filesOpen ? start.files : start.agents
+
+      // Calculate new heights with proper clamping
+      let newTasksHeight = start.tasks + totalDelta
+      let newOtherHeight = otherStart - totalDelta
+
+      // Clamp both to min height
+      if (newTasksHeight < MIN_CONTENT_HEIGHT) {
+        newTasksHeight = MIN_CONTENT_HEIGHT
+        newOtherHeight = otherStart + (start.tasks - MIN_CONTENT_HEIGHT)
+      }
+      if (newOtherHeight < MIN_CONTENT_HEIGHT) {
+        newOtherHeight = MIN_CONTENT_HEIGHT
+        newTasksHeight = start.tasks + (otherStart - MIN_CONTENT_HEIGHT)
+      }
+
+      // Ensure total doesn't exceed available (accounting for third panel if open)
+      const thirdPanelHeight = filesOpen && agentsOpen ? (agentsHeight ?? available / 3) : 0
+      const maxForTwo = available - thirdPanelHeight
+      if (newTasksHeight + newOtherHeight > maxForTwo) {
+        const excess = newTasksHeight + newOtherHeight - maxForTwo
+        if (totalDelta > 0) {
+          newOtherHeight = Math.max(MIN_CONTENT_HEIGHT, newOtherHeight - excess)
+        } else {
+          newTasksHeight = Math.max(MIN_CONTENT_HEIGHT, newTasksHeight - excess)
+        }
+      }
+
+      setTasksHeight(newTasksHeight)
+      if (filesOpen) {
+        setFilesHeight(newOtherHeight)
+      } else if (agentsOpen) {
+        setAgentsHeight(newOtherHeight)
+      }
+
+      // Auto-collapse if below threshold
+      if (newTasksHeight < COLLAPSE_THRESHOLD) {
+        setTasksOpen(false)
+      }
+      if (newOtherHeight < COLLAPSE_THRESHOLD) {
+        if (filesOpen) setFilesOpen(false)
+        else if (agentsOpen) setAgentsOpen(false)
+      }
+    },
+    [getContentHeights, getAvailableContentHeight, filesOpen, agentsOpen, agentsHeight]
+  )
 
   // Handle resize between files and agents
-  const handleFilesResize = useCallback((totalDelta: number) => {
-    if (!dragStartHeights.current) {
-      const heights = getContentHeights()
-      dragStartHeights.current = { ...heights }
-    }
-    
-    const start = dragStartHeights.current
-    const available = getAvailableContentHeight()
-    const tasksH = tasksOpen ? (tasksHeight ?? (available / 3)) : 0
-    const maxForFilesAndAgents = available - tasksH
-    
-    // Calculate new heights with proper clamping
-    let newFilesHeight = start.files + totalDelta
-    let newAgentsHeight = start.agents - totalDelta
-    
-    // Clamp both to min height
-    if (newFilesHeight < MIN_CONTENT_HEIGHT) {
-      newFilesHeight = MIN_CONTENT_HEIGHT
-      newAgentsHeight = start.agents + (start.files - MIN_CONTENT_HEIGHT)
-    }
-    if (newAgentsHeight < MIN_CONTENT_HEIGHT) {
-      newAgentsHeight = MIN_CONTENT_HEIGHT
-      newFilesHeight = start.files + (start.agents - MIN_CONTENT_HEIGHT)
-    }
-    
-    // Ensure total doesn't exceed available
-    if (newFilesHeight + newAgentsHeight > maxForFilesAndAgents) {
-      const excess = (newFilesHeight + newAgentsHeight) - maxForFilesAndAgents
-      if (totalDelta > 0) {
-        newAgentsHeight = Math.max(MIN_CONTENT_HEIGHT, newAgentsHeight - excess)
-      } else {
-        newFilesHeight = Math.max(MIN_CONTENT_HEIGHT, newFilesHeight - excess)
+  const handleFilesResize = useCallback(
+    (totalDelta: number) => {
+      if (!dragStartHeights.current) {
+        const heights = getContentHeights()
+        dragStartHeights.current = { ...heights }
       }
-    }
-    
-    setFilesHeight(newFilesHeight)
-    setAgentsHeight(newAgentsHeight)
-    
-    // Auto-collapse if below threshold
-    if (newFilesHeight < COLLAPSE_THRESHOLD) {
-      setFilesOpen(false)
-    }
-    if (newAgentsHeight < COLLAPSE_THRESHOLD) {
-      setAgentsOpen(false)
-    }
-  }, [getContentHeights, getAvailableContentHeight, tasksOpen, tasksHeight])
+
+      const start = dragStartHeights.current
+      const available = getAvailableContentHeight()
+      const tasksH = tasksOpen ? (tasksHeight ?? available / 3) : 0
+      const maxForFilesAndAgents = available - tasksH
+
+      // Calculate new heights with proper clamping
+      let newFilesHeight = start.files + totalDelta
+      let newAgentsHeight = start.agents - totalDelta
+
+      // Clamp both to min height
+      if (newFilesHeight < MIN_CONTENT_HEIGHT) {
+        newFilesHeight = MIN_CONTENT_HEIGHT
+        newAgentsHeight = start.agents + (start.files - MIN_CONTENT_HEIGHT)
+      }
+      if (newAgentsHeight < MIN_CONTENT_HEIGHT) {
+        newAgentsHeight = MIN_CONTENT_HEIGHT
+        newFilesHeight = start.files + (start.agents - MIN_CONTENT_HEIGHT)
+      }
+
+      // Ensure total doesn't exceed available
+      if (newFilesHeight + newAgentsHeight > maxForFilesAndAgents) {
+        const excess = newFilesHeight + newAgentsHeight - maxForFilesAndAgents
+        if (totalDelta > 0) {
+          newAgentsHeight = Math.max(MIN_CONTENT_HEIGHT, newAgentsHeight - excess)
+        } else {
+          newFilesHeight = Math.max(MIN_CONTENT_HEIGHT, newFilesHeight - excess)
+        }
+      }
+
+      setFilesHeight(newFilesHeight)
+      setAgentsHeight(newAgentsHeight)
+
+      // Auto-collapse if below threshold
+      if (newFilesHeight < COLLAPSE_THRESHOLD) {
+        setFilesOpen(false)
+      }
+      if (newAgentsHeight < COLLAPSE_THRESHOLD) {
+        setAgentsOpen(false)
+      }
+    },
+    [getContentHeights, getAvailableContentHeight, tasksOpen, tasksHeight]
+  )
 
   // Reset drag start on mouse up
   useEffect(() => {
-    const handleMouseUp = () => {
+    const handleMouseUp = (): void => {
       dragStartHeights.current = null
     }
     document.addEventListener('mouseup', handleMouseUp)
@@ -251,10 +297,14 @@ export function RightPanel() {
     setAgentsHeight(null)
   }, [tasksOpen, filesOpen, agentsOpen])
 
-  const heights = getContentHeights()
+  // Calculate heights in an effect (refs can't be accessed during render)
+  const [heights, setHeights] = useState({ tasks: 0, files: 0, agents: 0 })
+  useEffect(() => {
+    setHeights(getContentHeights())
+  }, [getContentHeights])
 
   return (
-    <aside 
+    <aside
       ref={containerRef}
       className="flex h-full w-full flex-col border-l border-border bg-sidebar overflow-hidden"
     >
@@ -265,7 +315,7 @@ export function RightPanel() {
           icon={ListTodo}
           badge={todos.length}
           isOpen={tasksOpen}
-          onToggle={() => setTasksOpen(prev => !prev)}
+          onToggle={() => setTasksOpen((prev) => !prev)}
         />
         {tasksOpen && (
           <div className="overflow-auto" style={{ height: heights.tasks }}>
@@ -273,12 +323,10 @@ export function RightPanel() {
           </div>
         )}
       </div>
-      
+
       {/* Resize handle after TASKS */}
-      {tasksOpen && (filesOpen || agentsOpen) && (
-        <ResizeHandle onDrag={handleTasksResize} />
-      )}
-      
+      {tasksOpen && (filesOpen || agentsOpen) && <ResizeHandle onDrag={handleTasksResize} />}
+
       {/* FILES */}
       <div className="flex flex-col shrink-0 border-b border-border">
         <SectionHeader
@@ -286,7 +334,7 @@ export function RightPanel() {
           icon={FolderTree}
           badge={workspaceFiles.length}
           isOpen={filesOpen}
-          onToggle={() => setFilesOpen(prev => !prev)}
+          onToggle={() => setFilesOpen((prev) => !prev)}
         />
         {filesOpen && (
           <div className="overflow-auto" style={{ height: heights.files }}>
@@ -294,12 +342,10 @@ export function RightPanel() {
           </div>
         )}
       </div>
-      
+
       {/* Resize handle after FILES */}
-      {filesOpen && agentsOpen && (
-        <ResizeHandle onDrag={handleFilesResize} />
-      )}
-      
+      {filesOpen && agentsOpen && <ResizeHandle onDrag={handleFilesResize} />}
+
       {/* AGENTS */}
       <div className="flex flex-col shrink-0">
         <SectionHeader
@@ -307,7 +353,7 @@ export function RightPanel() {
           icon={GitBranch}
           badge={subagents.length}
           isOpen={agentsOpen}
-          onToggle={() => setAgentsOpen(prev => !prev)}
+          onToggle={() => setAgentsOpen((prev) => !prev)}
         />
         {agentsOpen && (
           <div className="overflow-auto" style={{ height: heights.agents }}>
@@ -322,16 +368,36 @@ export function RightPanel() {
 // ============ Content Components ============
 
 const STATUS_CONFIG = {
-  pending: { icon: Circle, badge: 'outline' as const, label: 'PENDING', color: 'text-muted-foreground' },
-  in_progress: { icon: Clock, badge: 'info' as const, label: 'IN PROGRESS', color: 'text-status-info' },
-  completed: { icon: CheckCircle2, badge: 'nominal' as const, label: 'DONE', color: 'text-status-nominal' },
-  cancelled: { icon: XCircle, badge: 'critical' as const, label: 'CANCELLED', color: 'text-muted-foreground' }
+  pending: {
+    icon: Circle,
+    badge: 'outline' as const,
+    label: 'PENDING',
+    color: 'text-muted-foreground'
+  },
+  in_progress: {
+    icon: Clock,
+    badge: 'info' as const,
+    label: 'IN PROGRESS',
+    color: 'text-status-info'
+  },
+  completed: {
+    icon: CheckCircle2,
+    badge: 'nominal' as const,
+    label: 'DONE',
+    color: 'text-status-nominal'
+  },
+  cancelled: {
+    icon: XCircle,
+    badge: 'critical' as const,
+    label: 'CANCELLED',
+    color: 'text-muted-foreground'
+  }
 }
 
-function TasksContent() {
+function TasksContent(): React.JSX.Element {
   const { todos } = useAppStore()
   const [completedExpanded, setCompletedExpanded] = useState(false)
-  
+
   if (todos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center text-sm text-muted-foreground py-8 px-4">
@@ -342,14 +408,14 @@ function TasksContent() {
     )
   }
 
-  const inProgress = todos.filter(t => t.status === 'in_progress')
-  const pending = todos.filter(t => t.status === 'pending')
-  const completed = todos.filter(t => t.status === 'completed')
-  const cancelled = todos.filter(t => t.status === 'cancelled')
-  
+  const inProgress = todos.filter((t) => t.status === 'in_progress')
+  const pending = todos.filter((t) => t.status === 'pending')
+  const completed = todos.filter((t) => t.status === 'completed')
+  const cancelled = todos.filter((t) => t.status === 'cancelled')
+
   // Completed section includes both completed and cancelled
   const doneItems = [...completed, ...cancelled]
-  
+
   const done = completed.length
   const total = todos.length
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
@@ -360,16 +426,18 @@ function TasksContent() {
       <div className="p-3 border-b border-border/50">
         <div className="flex items-center justify-between mb-1.5 text-xs">
           <span className="text-muted-foreground">PROGRESS</span>
-          <span className="font-mono">{done}/{total}</span>
+          <span className="font-mono">
+            {done}/{total}
+          </span>
         </div>
         <div className="h-1.5 rounded-full bg-background overflow-hidden">
-          <div 
+          <div
             className="h-full bg-status-nominal transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
-      
+
       {/* Todo list */}
       <div className="p-3 space-y-2">
         {/* Completed/Cancelled Section (Collapsible) */}
@@ -399,12 +467,12 @@ function TasksContent() {
         )}
 
         {/* In Progress Section */}
-        {inProgress.map(todo => (
+        {inProgress.map((todo) => (
           <TaskItem key={todo.id} todo={todo} />
         ))}
 
         {/* Pending Section */}
-        {pending.map(todo => (
+        {pending.map((todo) => (
           <TaskItem key={todo.id} todo={todo} />
         ))}
       </div>
@@ -412,20 +480,20 @@ function TasksContent() {
   )
 }
 
-function TaskItem({ todo }: { todo: Todo }) {
+function TaskItem({ todo }: { todo: Todo }): React.JSX.Element {
   const config = STATUS_CONFIG[todo.status]
   const Icon = config.icon
   const isDone = todo.status === 'completed' || todo.status === 'cancelled'
 
   return (
-    <div className={cn(
-      "flex items-start gap-3 rounded-sm border border-border p-3",
-      isDone && "opacity-50"
-    )}>
-      <Icon className={cn("size-4 shrink-0 mt-0.5", config.color)} />
-      <span className={cn("flex-1 text-sm", isDone && "line-through")}>
-        {todo.content}
-      </span>
+    <div
+      className={cn(
+        'flex items-start gap-3 rounded-sm border border-border p-3',
+        isDone && 'opacity-50'
+      )}
+    >
+      <Icon className={cn('size-4 shrink-0 mt-0.5', config.color)} />
+      <span className={cn('flex-1 text-sm', isDone && 'line-through')}>{todo.content}</span>
       <Badge variant={config.badge} className="shrink-0 text-[10px]">
         {config.label}
       </Badge>
@@ -433,18 +501,19 @@ function TaskItem({ todo }: { todo: Todo }) {
   )
 }
 
-function FilesContent() {
-  const { workspaceFiles, workspacePath, currentThreadId, setWorkspacePath, setWorkspaceFiles } = useAppStore()
+function FilesContent(): React.JSX.Element {
+  const { workspaceFiles, workspacePath, currentThreadId, setWorkspacePath, setWorkspaceFiles } =
+    useAppStore()
   const [syncing, setSyncing] = useState(false)
   const [syncSuccess, setSyncSuccess] = useState(false)
-  
+
   // Load workspace path and files for current thread
   useEffect(() => {
-    async function loadWorkspace() {
+    async function loadWorkspace(): Promise<void> {
       if (currentThreadId) {
         const path = await window.api.workspace.get(currentThreadId)
         setWorkspacePath(path)
-        
+
         // If a folder is linked, load files from disk
         if (path) {
           const result = await window.api.workspace.loadFromDisk(currentThreadId)
@@ -456,9 +525,9 @@ function FilesContent() {
     }
     loadWorkspace()
   }, [currentThreadId, setWorkspacePath, setWorkspaceFiles])
-  
+
   // Handle selecting a workspace folder
-  async function handleSelectFolder() {
+  async function handleSelectFolder(): Promise<void> {
     if (!currentThreadId) return
     setSyncing(true)
     try {
@@ -477,23 +546,23 @@ function FilesContent() {
       setSyncing(false)
     }
   }
-  
+
   // Handle sync to disk
-  async function handleSyncToDisk() {
+  async function handleSyncToDisk(): Promise<void> {
     if (!currentThreadId) return
-    
+
     // If no files, just select a folder
     if (workspaceFiles.length === 0) {
       await handleSelectFolder()
       return
     }
-    
+
     setSyncing(true)
     setSyncSuccess(false)
-    
+
     try {
       const result = await window.api.workspace.syncToDisk(currentThreadId)
-      
+
       if (result.success) {
         setSyncSuccess(true)
         if (result.targetPath) {
@@ -509,12 +578,15 @@ function FilesContent() {
       setSyncing(false)
     }
   }
-  
+
   return (
     <div className="flex flex-col h-full">
       {/* Header with sync button */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-background/30">
-        <span className="text-[10px] text-muted-foreground truncate flex-1" title={workspacePath || undefined}>
+        <span
+          className="text-[10px] text-muted-foreground truncate flex-1"
+          title={workspacePath || undefined}
+        >
           {workspacePath ? workspacePath.split('/').pop() : 'No folder linked'}
         </span>
         <Button
@@ -524,9 +596,13 @@ function FilesContent() {
           disabled={syncing || !currentThreadId}
           className="h-5 px-1.5 text-[10px]"
           title={
-            workspaceFiles.length > 0 
-              ? (workspacePath ? `Sync to ${workspacePath}` : 'Sync files to disk')
-              : (workspacePath ? `Change folder` : 'Link sync folder')
+            workspaceFiles.length > 0
+              ? workspacePath
+                ? `Sync to ${workspacePath}`
+                : 'Sync files to disk'
+              : workspacePath
+                ? `Change folder`
+                : 'Link sync folder'
           }
         >
           {syncing ? (
@@ -539,18 +615,18 @@ function FilesContent() {
             <FolderSync className="size-3" />
           )}
           <span className="ml-1">
-            {workspaceFiles.length > 0 ? 'Sync' : (workspacePath ? 'Change' : 'Link')}
+            {workspaceFiles.length > 0 ? 'Sync' : workspacePath ? 'Change' : 'Link'}
           </span>
         </Button>
       </div>
-      
+
       {/* File tree or empty state */}
       {workspaceFiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center text-sm text-muted-foreground py-8 px-4 flex-1">
           <FolderTree className="size-8 mb-2 opacity-50" />
           <span>No workspace files</span>
           <span className="text-xs mt-1">
-            {workspacePath 
+            {workspacePath
               ? `Linked to ${workspacePath.split('/').pop()}`
               : 'Click "Link" to set a sync folder'}
           </span>
@@ -619,7 +695,7 @@ function buildFileTree(files: FileInfo[]): TreeNode[] {
 
       for (let i = 0; i < parts.length - 1; i++) {
         currentPath = currentPath ? `${currentPath}/${parts[i]}` : parts[i]
-        
+
         let parentNode = nodeMap.get(currentPath)
         if (!parentNode) {
           // Create implicit directory node
@@ -648,26 +724,26 @@ function buildFileTree(files: FileInfo[]): TreeNode[] {
       if (!a.is_dir && b.is_dir) return 1
       return a.name.localeCompare(b.name)
     })
-    nodes.forEach(n => sortChildren(n.children))
+    nodes.forEach((n) => sortChildren(n.children))
   }
   sortChildren(root)
 
   return root
 }
 
-function FileTree({ files }: { files: FileInfo[] }) {
+function FileTree({ files }: { files: FileInfo[] }): React.JSX.Element {
   const tree = useMemo(() => buildFileTree(files), [files])
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     // Start with all directories expanded
     const dirs = new Set<string>()
-    files.forEach(f => {
+    files.forEach((f) => {
       if (f.is_dir ?? false) dirs.add(f.path)
     })
     return dirs
   })
 
   const toggleExpand = useCallback((path: string) => {
-    setExpanded(prev => {
+    setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(path)) {
         next.delete(path)
@@ -680,11 +756,11 @@ function FileTree({ files }: { files: FileInfo[] }) {
 
   return (
     <div className="select-none">
-      {tree.map(node => (
-        <FileTreeNode 
-          key={node.path} 
-          node={node} 
-          depth={0} 
+      {tree.map((node) => (
+        <FileTreeNode
+          key={node.path}
+          node={node}
+          depth={0}
           expanded={expanded}
           onToggle={toggleExpand}
         />
@@ -693,23 +769,23 @@ function FileTree({ files }: { files: FileInfo[] }) {
   )
 }
 
-function FileTreeNode({ 
-  node, 
-  depth, 
-  expanded, 
-  onToggle 
-}: { 
+function FileTreeNode({
+  node,
+  depth,
+  expanded,
+  onToggle
+}: {
   node: TreeNode
   depth: number
   expanded: Set<string>
   onToggle: (path: string) => void
-}) {
+}): React.JSX.Element {
   const { openFile } = useAppStore()
   const isExpanded = expanded.has(node.path)
   const hasChildren = node.children.length > 0
   const paddingLeft = 8 + depth * 16
 
-  const handleClick = () => {
+  const handleClick = (): void => {
     if (node.is_dir) {
       onToggle(node.path)
     } else {
@@ -723,18 +799,19 @@ function FileTreeNode({
       <div
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-1.5 py-1 pr-3 text-xs hover:bg-background-interactive cursor-pointer"
+          'flex items-center gap-1.5 py-1 pr-3 text-xs hover:bg-background-interactive cursor-pointer'
         )}
         style={{ paddingLeft }}
       >
         {/* Expand/collapse chevron for directories */}
         {node.is_dir ? (
           <span className="w-3.5 flex items-center justify-center shrink-0">
-            {hasChildren && (
-              isExpanded 
-                ? <ChevronDown className="size-3 text-muted-foreground" />
-                : <ChevronRight className="size-3 text-muted-foreground" />
-            )}
+            {hasChildren &&
+              (isExpanded ? (
+                <ChevronDown className="size-3 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="size-3 text-muted-foreground" />
+              ))}
           </span>
         ) : (
           <span className="w-3.5 shrink-0" />
@@ -755,24 +832,36 @@ function FileTreeNode({
       </div>
 
       {/* Children */}
-      {node.is_dir && isExpanded && node.children.map(child => (
-        <FileTreeNode
-          key={child.path}
-          node={child}
-          depth={depth + 1}
-          expanded={expanded}
-          onToggle={onToggle}
-        />
-      ))}
+      {node.is_dir &&
+        isExpanded &&
+        node.children.map((child) => (
+          <FileTreeNode
+            key={child.path}
+            node={child}
+            depth={depth + 1}
+            expanded={expanded}
+            onToggle={onToggle}
+          />
+        ))}
     </>
   )
 }
 
-function FileIcon({ name, isDir, isOpen }: { name: string; isDir: boolean; isOpen?: boolean }) {
+function FileIcon({
+  name,
+  isDir,
+  isOpen
+}: {
+  name: string
+  isDir: boolean
+  isOpen?: boolean
+}): React.JSX.Element {
   if (isDir) {
-    return isOpen 
-      ? <FolderOpen className="size-3.5 text-amber-500 shrink-0" />
-      : <Folder className="size-3.5 text-amber-500 shrink-0" />
+    return isOpen ? (
+      <FolderOpen className="size-3.5 text-amber-500 shrink-0" />
+    ) : (
+      <Folder className="size-3.5 text-amber-500 shrink-0" />
+    )
   }
 
   // Get file extension
@@ -814,9 +903,9 @@ function FileIcon({ name, isDir, isOpen }: { name: string; isDir: boolean; isOpe
   }
 }
 
-function AgentsContent() {
+function AgentsContent(): React.JSX.Element {
   const { subagents } = useAppStore()
-  
+
   if (subagents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center text-sm text-muted-foreground py-8 px-4">
@@ -829,18 +918,20 @@ function AgentsContent() {
 
   return (
     <div className="p-3 space-y-2">
-      {subagents.map(agent => (
+      {subagents.map((agent) => (
         <div key={agent.id} className="p-3 rounded-sm border border-border">
           <div className="flex items-center gap-2 text-sm font-medium">
             <GitBranch className="size-3.5 text-status-info" />
             <span className="flex-1">{agent.name}</span>
-            <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded",
-              agent.status === 'pending' && "bg-muted text-muted-foreground",
-              agent.status === 'running' && "bg-status-info/20 text-status-info",
-              agent.status === 'completed' && "bg-status-nominal/20 text-status-nominal",
-              agent.status === 'failed' && "bg-status-critical/20 text-status-critical"
-            )}>
+            <span
+              className={cn(
+                'text-[10px] px-1.5 py-0.5 rounded',
+                agent.status === 'pending' && 'bg-muted text-muted-foreground',
+                agent.status === 'running' && 'bg-status-info/20 text-status-info',
+                agent.status === 'completed' && 'bg-status-nominal/20 text-status-nominal',
+                agent.status === 'failed' && 'bg-status-critical/20 text-status-critical'
+              )}
+            >
               {agent.status.toUpperCase()}
             </span>
           </div>
