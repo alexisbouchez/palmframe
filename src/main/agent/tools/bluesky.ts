@@ -1,13 +1,51 @@
 import { tool } from "@langchain/core/tools"
 import { z } from "zod"
 import { AtpAgent } from "@atproto/api"
+import { getBlueskyCredentials } from "../../storage"
 
-// Create a shared agent instance for the public Bluesky API
-const blueskyAgent = new AtpAgent({ service: "https://public.api.bsky.app" })
+// Cached authenticated agent
+let authenticatedAgent: AtpAgent | null = null
+let lastCredentialsHash: string | null = null
+
+/**
+ * Get an authenticated Bluesky agent.
+ * Caches the agent and only re-authenticates if credentials change.
+ */
+async function getAuthenticatedAgent(): Promise<AtpAgent> {
+  const credentials = getBlueskyCredentials()
+
+  if (!credentials) {
+    throw new Error(
+      "Bluesky credentials not configured. Please add your Bluesky identifier and app password in settings."
+    )
+  }
+
+  // Check if we need to re-authenticate
+  const credentialsHash = `${credentials.identifier}:${credentials.appPassword}`
+  if (authenticatedAgent && lastCredentialsHash === credentialsHash) {
+    return authenticatedAgent
+  }
+
+  console.log("[Bluesky] Authenticating with Bluesky API...")
+
+  const agent = new AtpAgent({ service: "https://bsky.social" })
+
+  await agent.login({
+    identifier: credentials.identifier,
+    password: credentials.appPassword
+  })
+
+  console.log("[Bluesky] Authentication successful")
+
+  authenticatedAgent = agent
+  lastCredentialsHash = credentialsHash
+
+  return agent
+}
 
 /**
  * Search for posts on Bluesky social network.
- * Uses the public Bluesky API - no authentication required.
+ * Requires authentication with Bluesky credentials.
  */
 export const searchBlueskyPosts = tool(
   async ({
@@ -22,7 +60,9 @@ export const searchBlueskyPosts = tool(
     try {
       console.log(`[Bluesky] Searching posts for: "${query}" (limit: ${limit}, sort: ${sort})`)
 
-      const response = await blueskyAgent.app.bsky.feed.searchPosts({
+      const agent = await getAuthenticatedAgent()
+
+      const response = await agent.app.bsky.feed.searchPosts({
         q: query,
         limit: Math.min(limit, 25), // API max is typically 25
         sort
@@ -73,12 +113,12 @@ export const searchBlueskyPosts = tool(
   {
     name: "search_bluesky",
     description:
-      "Search for posts on Bluesky social network. Use this to find recent discussions, opinions, news, or any public content shared on Bluesky. Returns post text, author info, and engagement metrics.",
+      "Search for posts on Bluesky social network. Use this to find recent discussions, opinions, news, or any public content shared on Bluesky. Returns post text, author info, and engagement metrics. Requires Bluesky credentials to be configured. IMPORTANT search tips: Use simple keyword queries (1-3 words). Do NOT include years or dates in queries - use sort='latest' instead to get recent posts. Avoid complex boolean operators (AND/OR). You can optionally add 'lang:en' for English posts. Examples of GOOD queries: 'job market', 'tech layoffs', 'remote work', 'AI jobs', 'hiring lang:en'. Examples of BAD queries: 'job market 2026', 'jobs January 2026', 'tech OR software'.",
     schema: z.object({
       query: z
         .string()
         .describe(
-          "The search query. Can include keywords, hashtags, or phrases. Use quotes for exact phrases."
+          "Simple keyword query (1-3 words). Do NOT include years/dates. Optionally add 'lang:en' for English. Examples: 'job market', 'hiring lang:en', 'tech layoffs'."
         ),
       limit: z
         .number()
@@ -107,8 +147,10 @@ export const getBlueskyProfile = tool(
 
       console.log(`[Bluesky] Getting profile for: ${normalizedHandle}`)
 
+      const agent = await getAuthenticatedAgent()
+
       // Get profile
-      const profileResponse = await blueskyAgent.app.bsky.actor.getProfile({
+      const profileResponse = await agent.app.bsky.actor.getProfile({
         actor: normalizedHandle
       })
 
@@ -119,7 +161,7 @@ export const getBlueskyProfile = tool(
       const profile = profileResponse.data
 
       // Get recent posts
-      const feedResponse = await blueskyAgent.app.bsky.feed.getAuthorFeed({
+      const feedResponse = await agent.app.bsky.feed.getAuthorFeed({
         actor: normalizedHandle,
         limit: Math.min(postsLimit, 25)
       })
@@ -161,7 +203,7 @@ export const getBlueskyProfile = tool(
   {
     name: "get_bluesky_profile",
     description:
-      "Get a Bluesky user's profile information and their recent posts. Use this to learn about a specific user, their bio, follower count, and what they've been posting.",
+      "Get a Bluesky user's profile information and their recent posts. Use this to learn about a specific user, their bio, follower count, and what they've been posting. Requires Bluesky credentials to be configured.",
     schema: z.object({
       handle: z
         .string()

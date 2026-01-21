@@ -123,3 +123,49 @@ export function deleteApiKey(provider: string): void {
 export function hasApiKey(provider: string): boolean {
   return !!getApiKey(provider)
 }
+
+// Bluesky credentials management (requires both identifier and app password)
+const BLUESKY_IDENTIFIER_KEY = "BLUESKY_IDENTIFIER"
+const BLUESKY_APP_PASSWORD_KEY = "BLUESKY_APP_PASSWORD"
+
+export interface BlueskyCredentials {
+  identifier: string
+  appPassword: string
+}
+
+export function getBlueskyCredentials(): BlueskyCredentials | undefined {
+  const env = parseEnvFile()
+  const identifier = env[BLUESKY_IDENTIFIER_KEY] || process.env[BLUESKY_IDENTIFIER_KEY]
+  const appPassword = env[BLUESKY_APP_PASSWORD_KEY] || process.env[BLUESKY_APP_PASSWORD_KEY]
+
+  if (identifier && appPassword) {
+    return { identifier, appPassword }
+  }
+  return undefined
+}
+
+export function setBlueskyCredentials(identifier: string, appPassword: string): void {
+  const env = parseEnvFile()
+  env[BLUESKY_IDENTIFIER_KEY] = identifier
+  env[BLUESKY_APP_PASSWORD_KEY] = appPassword
+  writeEnvFile(env)
+
+  // Also set in process.env for current session
+  process.env[BLUESKY_IDENTIFIER_KEY] = identifier
+  process.env[BLUESKY_APP_PASSWORD_KEY] = appPassword
+}
+
+export function deleteBlueskyCredentials(): void {
+  const env = parseEnvFile()
+  delete env[BLUESKY_IDENTIFIER_KEY]
+  delete env[BLUESKY_APP_PASSWORD_KEY]
+  writeEnvFile(env)
+
+  // Also clear from process.env
+  delete process.env[BLUESKY_IDENTIFIER_KEY]
+  delete process.env[BLUESKY_APP_PASSWORD_KEY]
+}
+
+export function hasBlueskyCredentials(): boolean {
+  return !!getBlueskyCredentials()
+}
