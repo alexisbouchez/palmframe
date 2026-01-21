@@ -38,6 +38,7 @@ export interface ThreadState {
   todos: Todo[]
   workspaceFiles: FileInfo[]
   workspacePath: string | null
+  daytonaSandboxId: string | null
   subagents: Subagent[]
   pendingApproval: HITLRequest | null
   error: string | null
@@ -65,6 +66,7 @@ export interface ThreadActions {
   setTodos: (todos: Todo[]) => void
   setWorkspaceFiles: (files: FileInfo[] | ((prev: FileInfo[]) => FileInfo[])) => void
   setWorkspacePath: (path: string | null) => void
+  setDaytonaSandboxId: (sandboxId: string | null) => void
   setSubagents: (subagents: Subagent[]) => void
   setPendingApproval: (request: HITLRequest | null) => void
   setError: (error: string | null) => void
@@ -93,6 +95,7 @@ const createDefaultThreadState = (): ThreadState => ({
   todos: [],
   workspaceFiles: [],
   workspacePath: null,
+  daytonaSandboxId: null,
   subagents: [],
   pendingApproval: null,
   error: null,
@@ -439,6 +442,9 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         setWorkspacePath: (path: string | null) => {
           updateThreadState(threadId, () => ({ workspacePath: path }))
         },
+        setDaytonaSandboxId: (sandboxId: string | null) => {
+          updateThreadState(threadId, () => ({ daytonaSandboxId: sandboxId }))
+        },
         setSubagents: (subagents: Subagent[]) => {
           updateThreadState(threadId, () => ({ subagents }))
         },
@@ -510,12 +516,17 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     async (threadId: string) => {
       const actions = getThreadActions(threadId)
 
-      // Load workspace path and thread metadata
+      // Load workspace path, Daytona sandbox, and thread metadata
       try {
         const thread = await window.api.threads.get(threadId)
         if (thread) {
           const metadata = thread.metadata || {}
-          if (metadata.workspacePath) {
+          // Check for Daytona sandbox first
+          if (metadata.daytonaSandboxId) {
+            actions.setDaytonaSandboxId(metadata.daytonaSandboxId as string)
+            // Clear local workspace when using Daytona
+            actions.setWorkspacePath(null)
+          } else if (metadata.workspacePath) {
             actions.setWorkspacePath(metadata.workspacePath as string)
             const diskResult = await window.api.workspace.loadFromDisk(threadId)
             if (diskResult.success) {

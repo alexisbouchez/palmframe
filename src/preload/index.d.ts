@@ -53,6 +53,41 @@ interface CustomAPI {
     setApiKey: (provider: string, apiKey: string) => Promise<void>
     getApiKey: (provider: string) => Promise<string | null>
   }
+  bluesky: {
+    hasCredentials: () => Promise<boolean>
+    getCredentials: () => Promise<{ identifier: string; hasPassword: boolean } | null>
+    setCredentials: (identifier: string, appPassword: string) => Promise<void>
+    deleteCredentials: () => Promise<void>
+  }
+  daytona: {
+    hasCredentials: () => Promise<boolean>
+    getCredentials: () => Promise<{ apiUrl: string; hasApiKey: boolean } | null>
+    setCredentials: (apiKey: string, apiUrl?: string) => Promise<void>
+    deleteCredentials: () => Promise<void>
+    listSandboxes: () => Promise<{
+      error?: string
+      sandboxes: Array<{
+        id: string
+        state: string
+        createdAt?: string
+        labels?: Record<string, string>
+      }>
+    }>
+    createSandbox: (options?: {
+      language?: "typescript" | "python" | "javascript"
+      envVars?: Record<string, string>
+    }) => Promise<{ id?: string; state?: string; error?: string }>
+    deleteSandbox: (sandboxId: string) => Promise<{ success?: boolean; error?: string }>
+    startSandbox: (sandboxId: string) => Promise<{ success?: boolean; error?: string }>
+    stopSandbox: (sandboxId: string) => Promise<{ success?: boolean; error?: string }>
+    listFiles: (
+      sandboxId: string,
+      path?: string
+    ) => Promise<{
+      files: Array<{ path: string; is_dir: boolean; size?: number; modified_at?: string }>
+      error?: string
+    }>
+  }
   workspace: {
     get: (threadId?: string) => Promise<string | null>
     set: (threadId: string | undefined, path: string | null) => Promise<string | null>

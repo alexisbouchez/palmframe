@@ -169,3 +169,54 @@ export function deleteBlueskyCredentials(): void {
 export function hasBlueskyCredentials(): boolean {
   return !!getBlueskyCredentials()
 }
+
+// Daytona credentials management (API key and optional API URL)
+const DAYTONA_API_KEY = "DAYTONA_API_KEY"
+const DAYTONA_API_URL = "DAYTONA_API_URL"
+
+export interface DaytonaCredentials {
+  apiKey: string
+  apiUrl: string
+}
+
+export function getDaytonaCredentials(): DaytonaCredentials | undefined {
+  const env = parseEnvFile()
+  const apiKey = env[DAYTONA_API_KEY] || process.env[DAYTONA_API_KEY]
+  const apiUrl =
+    env[DAYTONA_API_URL] || process.env[DAYTONA_API_URL] || "https://app.daytona.io/api"
+
+  if (apiKey) {
+    return { apiKey, apiUrl }
+  }
+  return undefined
+}
+
+export function setDaytonaCredentials(apiKey: string, apiUrl?: string): void {
+  const env = parseEnvFile()
+  env[DAYTONA_API_KEY] = apiKey
+  if (apiUrl) {
+    env[DAYTONA_API_URL] = apiUrl
+  }
+  writeEnvFile(env)
+
+  // Also set in process.env for current session
+  process.env[DAYTONA_API_KEY] = apiKey
+  if (apiUrl) {
+    process.env[DAYTONA_API_URL] = apiUrl
+  }
+}
+
+export function deleteDaytonaCredentials(): void {
+  const env = parseEnvFile()
+  delete env[DAYTONA_API_KEY]
+  delete env[DAYTONA_API_URL]
+  writeEnvFile(env)
+
+  // Also clear from process.env
+  delete process.env[DAYTONA_API_KEY]
+  delete process.env[DAYTONA_API_URL]
+}
+
+export function hasDaytonaCredentials(): boolean {
+  return !!getDaytonaCredentials()
+}

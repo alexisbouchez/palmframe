@@ -58,17 +58,24 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       console.log("[Agent] Thread metadata:", metadata)
 
       const workspacePath = metadata.workspacePath as string | undefined
+      const daytonaSandboxId = metadata.daytonaSandboxId as string | undefined
 
-      if (!workspacePath) {
+      // Either local workspace or Daytona sandbox is required
+      if (!workspacePath && !daytonaSandboxId) {
         window.webContents.send(channel, {
           type: "error",
           error: "WORKSPACE_REQUIRED",
-          message: "Please select a workspace folder before sending messages."
+          message: "Please select a workspace folder or Daytona sandbox before sending messages."
         })
         return
       }
 
-      const agent = await createAgentRuntime({ threadId, workspacePath, modelId })
+      const agent = await createAgentRuntime({
+        threadId,
+        workspacePath: workspacePath || "/home/daytona",
+        modelId,
+        daytonaSandboxId
+      })
       const humanMessage = new HumanMessage(message)
 
       // Stream with both modes:
@@ -140,11 +147,12 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
     const thread = getThread(threadId)
     const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
     const workspacePath = metadata.workspacePath as string | undefined
+    const daytonaSandboxId = metadata.daytonaSandboxId as string | undefined
 
-    if (!workspacePath) {
+    if (!workspacePath && !daytonaSandboxId) {
       window.webContents.send(channel, {
         type: "error",
-        error: "Workspace path is required"
+        error: "Workspace path or Daytona sandbox is required"
       })
       return
     }
@@ -160,7 +168,12 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
     activeRuns.set(threadId, abortController)
 
     try {
-      const agent = await createAgentRuntime({ threadId, workspacePath, modelId })
+      const agent = await createAgentRuntime({
+        threadId,
+        workspacePath: workspacePath || "/home/daytona",
+        modelId,
+        daytonaSandboxId
+      })
       const config = {
         configurable: { thread_id: threadId },
         signal: abortController.signal,
@@ -221,12 +234,13 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
     const thread = getThread(threadId)
     const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
     const workspacePath = metadata.workspacePath as string | undefined
+    const daytonaSandboxId = metadata.daytonaSandboxId as string | undefined
     const modelId = metadata.model as string | undefined
 
-    if (!workspacePath) {
+    if (!workspacePath && !daytonaSandboxId) {
       window.webContents.send(channel, {
         type: "error",
-        error: "Workspace path is required"
+        error: "Workspace path or Daytona sandbox is required"
       })
       return
     }
@@ -242,7 +256,12 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
     activeRuns.set(threadId, abortController)
 
     try {
-      const agent = await createAgentRuntime({ threadId, workspacePath, modelId })
+      const agent = await createAgentRuntime({
+        threadId,
+        workspacePath: workspacePath || "/home/daytona",
+        modelId,
+        daytonaSandboxId
+      })
       const config = {
         configurable: { thread_id: threadId },
         signal: abortController.signal,

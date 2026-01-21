@@ -513,34 +513,55 @@ function FilesContent(): React.JSX.Element {
   const threadState = useThreadState(currentThreadId)
   const workspaceFiles = threadState?.workspaceFiles ?? []
   const workspacePath = threadState?.workspacePath ?? null
+  const daytonaSandboxId = threadState?.daytonaSandboxId ?? null
   const setWorkspacePath = threadState?.setWorkspacePath
   const setWorkspaceFiles = threadState?.setWorkspaceFiles
   const [syncing, setSyncing] = useState(false)
   const [syncSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  // Determine if we're in Daytona mode
+  const isDaytonaMode = !!daytonaSandboxId
 
   // Load workspace path and files for current thread
   useEffect(() => {
     async function loadWorkspace(): Promise<void> {
-      if (currentThreadId && setWorkspacePath && setWorkspaceFiles) {
-        const path = await window.api.workspace.get(currentThreadId)
-        setWorkspacePath(path)
+      if (!currentThreadId || !setWorkspaceFiles) return
 
-        // If a folder is linked, load files from disk
-        if (path) {
-          const result = await window.api.workspace.loadFromDisk(currentThreadId)
-          if (result.success && result.files) {
+      setLoading(true)
+      try {
+        if (daytonaSandboxId) {
+          // Load files from Daytona sandbox
+          console.log("[FilesContent] Loading files from Daytona sandbox:", daytonaSandboxId)
+          const result = await window.api.daytona.listFiles(daytonaSandboxId)
+          if (result.files) {
             setWorkspaceFiles(result.files)
           }
+        } else if (setWorkspacePath) {
+          // Load files from local workspace
+          const path = await window.api.workspace.get(currentThreadId)
+          setWorkspacePath(path)
+
+          if (path) {
+            const result = await window.api.workspace.loadFromDisk(currentThreadId)
+            if (result.success && result.files) {
+              setWorkspaceFiles(result.files)
+            }
+          }
         }
+      } catch (e) {
+        console.error("[FilesContent] Load workspace error:", e)
+      } finally {
+        setLoading(false)
       }
     }
     loadWorkspace()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentThreadId])
+  }, [currentThreadId, daytonaSandboxId])
 
-  // Listen for file changes from the workspace watcher
+  // Listen for file changes from the workspace watcher (local mode only)
   useEffect(() => {
-    if (!currentThreadId || !setWorkspaceFiles) return
+    if (!currentThreadId || !setWorkspaceFiles || isDaytonaMode) return
 
     const cleanup = window.api.workspace.onFilesChanged(async (data) => {
       // Only reload if the event is for the current thread
@@ -555,9 +576,25 @@ function FilesContent(): React.JSX.Element {
 
     return cleanup
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentThreadId])
+  }, [currentThreadId, isDaytonaMode])
 
-  // Handle selecting a workspace folder
+  // Handle refreshing files (for Daytona mode)
+  async function handleRefresh(): Promise<void> {
+    if (!daytonaSandboxId || !setWorkspaceFiles) return
+    setSyncing(true)
+    try {
+      const result = await window.api.daytona.listFiles(daytonaSandboxId)
+      if (result.files) {
+        setWorkspaceFiles(result.files)
+      }
+    } catch (e) {
+      console.error("[FilesContent] Refresh error:", e)
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  // Handle selecting a workspace folder (local mode only)
   async function handleSelectFolder(): Promise<void> {
     if (!currentThreadId || !setWorkspacePath || !setWorkspaceFiles) return
     setSyncing(true)
@@ -593,43 +630,65 @@ function FilesContent(): React.JSX.Element {
     console.warn("[FilesContent] syncToDisk is not yet implemented")
   }
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center text-sm text-muted-foreground py-8 px-4 flex-1">
+        <Loader2 className="size-6 mb-2 animate-spin opacity-50" />
+        <span>Loading files...</span>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header with sync button */}
+      {/* Header with sync/refresh button */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-background/30">
         <span
           className="text-[10px] text-muted-foreground truncate flex-1"
-          title={workspacePath || undefined}
+          title={isDaytonaMode ? `/home/daytona (${daytonaSandboxId})` : workspacePath || undefined}
         >
-          {workspacePath ? workspacePath.split("/").pop() : "No folder linked"}
+          {isDaytonaMode
+            ? `Daytona (${daytonaSandboxId?.slice(0, 8)})`
+            : workspacePath
+              ? workspacePath.split("/").pop()
+              : "No folder linked"}
         </span>
         <Button
           variant="ghost"
           size="sm"
-          onClick={workspaceFiles.length > 0 ? handleSyncToDisk : handleSelectFolder}
+          onClick={
+            isDaytonaMode
+              ? handleRefresh
+              : workspaceFiles.length > 0
+                ? handleSyncToDisk
+                : handleSelectFolder
+          }
           disabled={syncing || !currentThreadId}
           className="h-5 px-1.5 text-[10px]"
           title={
-            workspaceFiles.length > 0
-              ? workspacePath
-                ? `Sync to ${workspacePath}`
-                : "Sync files to disk"
-              : workspacePath
-                ? `Change folder`
-                : "Link sync folder"
+            isDaytonaMode ? "Refresh files" : workspacePath ? "Sync files" : "Link sync folder"
           }
         >
           {syncing ? (
             <Loader2 className="size-3 animate-spin" />
           ) : syncSuccess ? (
             <Check className="size-3 text-status-nominal" />
+          ) : isDaytonaMode ? (
+            <FolderSync className="size-3" />
           ) : workspaceFiles.length > 0 ? (
             <Download className="size-3" />
           ) : (
             <FolderSync className="size-3" />
           )}
           <span className="ml-1">
-            {workspaceFiles.length > 0 ? "Sync" : workspacePath ? "Change" : "Link"}
+            {isDaytonaMode
+              ? "Refresh"
+              : workspaceFiles.length > 0
+                ? "Sync"
+                : workspacePath
+                  ? "Change"
+                  : "Link"}
           </span>
         </Button>
       </div>
@@ -640,9 +699,11 @@ function FilesContent(): React.JSX.Element {
           <FolderTree className="size-8 mb-2 opacity-50" />
           <span>No workspace files</span>
           <span className="text-xs mt-1">
-            {workspacePath
-              ? `Linked to ${workspacePath.split("/").pop()}`
-              : 'Click "Link" to set a sync folder'}
+            {isDaytonaMode
+              ? "Sandbox is empty"
+              : workspacePath
+                ? `Linked to ${workspacePath.split("/").pop()}`
+                : 'Click "Link" to set a sync folder'}
           </span>
         </div>
       ) : (

@@ -45,6 +45,7 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     todos,
     error: threadError,
     workspacePath,
+    daytonaSandboxId,
     tokenUsage,
     currentModel,
     setTodos,
@@ -55,6 +56,9 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     setError,
     clearError
   } = useCurrentThread(threadId)
+
+  // Check if workspace is configured (either local folder or Daytona sandbox)
+  const hasWorkspace = !!workspacePath || !!daytonaSandboxId
 
   // Get the stream data via subscription - reactive updates without re-rendering provider
   const streamData = useThreadStream(threadId)
@@ -221,8 +225,8 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     e.preventDefault()
     if (!input.trim() || isLoading || !stream) return
 
-    if (!workspacePath) {
-      setError("Please select a workspace folder before sending messages.")
+    if (!hasWorkspace) {
+      setError("Please select a workspace folder or Daytona sandbox before sending messages.")
       return
     }
 
@@ -300,12 +304,16 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
             {displayMessages.length === 0 && !isLoading && (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <div className="text-section-header mb-2">NEW THREAD</div>
-                {workspacePath ? (
-                  <div className="text-sm">Start a conversation with the agent</div>
+                {hasWorkspace ? (
+                  <div className="text-sm">
+                    {daytonaSandboxId
+                      ? "Start a conversation with the agent (using Daytona sandbox)"
+                      : "Start a conversation with the agent"}
+                  </div>
                 ) : (
                   <div className="text-sm text-center space-y-3">
                     <div>
-                      <span className="text-amber-500">Select a workspace folder</span>
+                      <span className="text-amber-500">Select a workspace</span>
                       <span className="block text-xs mt-1 opacity-75">
                         The agent needs a workspace to create and modify files
                       </span>

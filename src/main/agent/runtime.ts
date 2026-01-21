@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
 import { getDefaultModel } from "../ipc/models"
-import { getApiKey, getThreadCheckpointPath } from "../storage"
+import { getApiKey, getThreadCheckpointPath, getDaytonaCredentials } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import { ChatMistralAI } from "@langchain/mistralai"
 import { SqlJsSaver } from "../checkpointer/sqljs-saver"
 import { LocalSandbox } from "./local-sandbox"
+import { DaytonaSandbox } from "./daytona-sandbox"
 
 import type * as _lcTypes from "langchain"
 import type * as _lcMessages from "@langchain/core/messages"
@@ -21,13 +22,16 @@ import { blueskyTools } from "./tools/bluesky"
  * Generate the full system prompt for the agent.
  *
  * @param workspacePath - The workspace path the agent is operating in
+ * @param isRemote - Whether this is a remote sandbox (Daytona)
  * @returns The complete system prompt
  */
-function getSystemPrompt(workspacePath: string): string {
+function getSystemPrompt(workspacePath: string, isRemote = false): string {
+  const envType = isRemote ? "remote Daytona sandbox" : "local filesystem"
   const workingDirSection = `
 ### File System and Paths
 
 **IMPORTANT - Path Handling:**
+- You are operating in a ${envType}
 - All file paths use fully qualified absolute system paths
 - The workspace root is: \`${workspacePath}\`
 - Example: \`${workspacePath}/src/index.ts\`, \`${workspacePath}/README.md\`
@@ -129,21 +133,30 @@ export interface CreateAgentRuntimeOptions {
   threadId: string
   /** Model ID to use (defaults to configured default model) */
   modelId?: string
-  /** Workspace path - REQUIRED for agent to operate on files */
+  /** Workspace path - REQUIRED for local agent, or working directory for Daytona */
   workspacePath: string
+  /** Daytona sandbox ID - if provided, uses remote Daytona sandbox instead of local */
+  daytonaSandboxId?: string
 }
 
 // Create agent runtime with configured model and checkpointer
 export type AgentRuntime = ReturnType<typeof createDeepAgent>
 
+// Track active Daytona sandboxes for cleanup
+const activeDaytonaSandboxes = new Map<string, DaytonaSandbox>()
+
 export async function createAgentRuntime(options: CreateAgentRuntimeOptions) {
-  const { threadId, modelId, workspacePath } = options
+  const { threadId, modelId, workspacePath, daytonaSandboxId } = options
 
   if (!threadId) {
     throw new Error("Thread ID is required for checkpointing.")
   }
 
-  if (!workspacePath) {
+  // For Daytona, workspacePath is the working directory inside the sandbox
+  const isRemote = !!daytonaSandboxId
+  const effectiveWorkspacePath = isRemote ? workspacePath || "/home/daytona" : workspacePath
+
+  if (!isRemote && !workspacePath) {
     throw new Error(
       "Workspace path is required. Please select a workspace folder before running the agent."
     )
@@ -151,7 +164,8 @@ export async function createAgentRuntime(options: CreateAgentRuntimeOptions) {
 
   console.log("[Runtime] Creating agent runtime...")
   console.log("[Runtime] Thread ID:", threadId)
-  console.log("[Runtime] Workspace path:", workspacePath)
+  console.log("[Runtime] Workspace path:", effectiveWorkspacePath)
+  console.log("[Runtime] Remote (Daytona):", isRemote)
 
   const model = getModelInstance(modelId)
   console.log("[Runtime] Model instance created:", typeof model)
@@ -159,42 +173,83 @@ export async function createAgentRuntime(options: CreateAgentRuntimeOptions) {
   const checkpointer = await getCheckpointer(threadId)
   console.log("[Runtime] Checkpointer ready for thread:", threadId)
 
-  const backend = new LocalSandbox({
-    rootDir: workspacePath,
-    virtualMode: false, // Use absolute system paths for consistency with shell commands
-    timeout: 120_000, // 2 minutes
-    maxOutputBytes: 100_000 // ~100KB
-  })
+  // Create backend - either local or Daytona
+  let backend: LocalSandbox | DaytonaSandbox
 
-  const systemPrompt = getSystemPrompt(workspacePath)
+  if (isRemote && daytonaSandboxId) {
+    const daytonaCredentials = getDaytonaCredentials()
+    if (!daytonaCredentials) {
+      throw new Error("Daytona credentials not configured. Please configure in Settings.")
+    }
 
-  // Custom filesystem prompt for absolute paths (matches virtualMode: false)
-  const filesystemSystemPrompt = `You have access to a filesystem. All file paths use fully qualified absolute system paths.
+    const daytonaSandbox = new DaytonaSandbox({
+      apiKey: daytonaCredentials.apiKey,
+      apiUrl: daytonaCredentials.apiUrl,
+      sandboxId: daytonaSandboxId,
+      workingDir: effectiveWorkspacePath,
+      timeout: 120, // 2 minutes
+      maxOutputBytes: 100_000
+    })
 
-- ls: list files in a directory (e.g., ls("${workspacePath}"))
+    // Initialize the sandbox (connect to existing)
+    await daytonaSandbox.initialize()
+    backend = daytonaSandbox
+
+    // Track for cleanup
+    activeDaytonaSandboxes.set(threadId, daytonaSandbox)
+    console.log("[Runtime] Connected to Daytona sandbox:", daytonaSandboxId)
+  } else {
+    backend = new LocalSandbox({
+      rootDir: effectiveWorkspacePath,
+      virtualMode: false,
+      timeout: 120_000,
+      maxOutputBytes: 100_000
+    })
+    console.log("[Runtime] Created LocalSandbox at:", effectiveWorkspacePath)
+  }
+
+  const systemPrompt = getSystemPrompt(effectiveWorkspacePath, isRemote)
+
+  // Custom filesystem prompt
+  const envDesc = isRemote ? "remote Daytona sandbox" : "local filesystem"
+  const filesystemSystemPrompt = `You have access to a ${envDesc}. All file paths use fully qualified absolute system paths.
+
+- ls: list files in a directory (e.g., ls("${effectiveWorkspacePath}"))
 - read_file: read a file from the filesystem
 - write_file: write to a file in the filesystem
 - edit_file: edit a file in the filesystem
 - glob: find files matching a pattern (e.g., "**/*.py")
 - grep: search for text within files
 
-The workspace root is: ${workspacePath}`
+The workspace root is: ${effectiveWorkspacePath}`
 
   const agent = createDeepAgent({
     model,
     checkpointer,
     backend,
     systemPrompt,
-    // Custom filesystem prompt for absolute paths (requires deepagents update)
     filesystemSystemPrompt,
-    // Add Bluesky social search tools
     tools: blueskyTools,
-    // Require human approval for all shell commands
     interruptOn: { execute: true }
   } as Parameters<typeof createDeepAgent>[0])
 
-  console.log("[Runtime] Deep agent created with LocalSandbox at:", workspacePath)
+  console.log(`[Runtime] Deep agent created with ${isRemote ? "DaytonaSandbox" : "LocalSandbox"}`)
   return agent
+}
+
+// Get active Daytona sandbox for a thread
+export function getActiveDaytonaSandbox(threadId: string): DaytonaSandbox | undefined {
+  return activeDaytonaSandboxes.get(threadId)
+}
+
+// Clean up Daytona sandbox for a thread
+export async function cleanupDaytonaSandbox(threadId: string): Promise<void> {
+  const sandbox = activeDaytonaSandboxes.get(threadId)
+  if (sandbox) {
+    // Just remove from tracking - don't stop/delete as the sandbox may be reused
+    activeDaytonaSandboxes.delete(threadId)
+    console.log(`[Runtime] Removed Daytona sandbox tracking for thread: ${threadId}`)
+  }
 }
 
 export type DeepAgent = ReturnType<typeof createDeepAgent>

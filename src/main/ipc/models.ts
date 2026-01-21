@@ -11,7 +11,22 @@ import type {
   WorkspaceFileParams
 } from "../types"
 import { startWatching, stopWatching } from "../services/workspace-watcher"
-import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey } from "../storage"
+import {
+  getOpenworkDir,
+  getApiKey,
+  setApiKey,
+  deleteApiKey,
+  hasApiKey,
+  getBlueskyCredentials,
+  setBlueskyCredentials,
+  deleteBlueskyCredentials,
+  hasBlueskyCredentials,
+  getDaytonaCredentials,
+  setDaytonaCredentials,
+  deleteDaytonaCredentials,
+  hasDaytonaCredentials
+} from "../storage"
+import { createDaytonaClient } from "../agent/daytona-sandbox"
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -297,6 +312,209 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     }))
   })
 
+  // Bluesky credentials management
+  ipcMain.handle("bluesky:hasCredentials", async () => {
+    return hasBlueskyCredentials()
+  })
+
+  ipcMain.handle("bluesky:getCredentials", async () => {
+    const credentials = getBlueskyCredentials()
+    if (credentials) {
+      // Return identifier only for display, not the password
+      return { identifier: credentials.identifier, hasPassword: true }
+    }
+    return null
+  })
+
+  ipcMain.handle(
+    "bluesky:setCredentials",
+    async (_event, { identifier, appPassword }: { identifier: string; appPassword: string }) => {
+      setBlueskyCredentials(identifier, appPassword)
+    }
+  )
+
+  ipcMain.handle("bluesky:deleteCredentials", async () => {
+    deleteBlueskyCredentials()
+  })
+
+  // Daytona credentials management
+  ipcMain.handle("daytona:hasCredentials", async () => {
+    return hasDaytonaCredentials()
+  })
+
+  ipcMain.handle("daytona:getCredentials", async () => {
+    const credentials = getDaytonaCredentials()
+    if (credentials) {
+      // Return API URL but mask the key
+      return { apiUrl: credentials.apiUrl, hasApiKey: true }
+    }
+    return null
+  })
+
+  ipcMain.handle(
+    "daytona:setCredentials",
+    async (_event, { apiKey, apiUrl }: { apiKey: string; apiUrl?: string }) => {
+      setDaytonaCredentials(apiKey, apiUrl)
+    }
+  )
+
+  ipcMain.handle("daytona:deleteCredentials", async () => {
+    deleteDaytonaCredentials()
+  })
+
+  // Daytona sandbox management
+  ipcMain.handle("daytona:listSandboxes", async () => {
+    const credentials = getDaytonaCredentials()
+    if (!credentials) {
+      return { error: "Daytona credentials not configured", sandboxes: [] }
+    }
+
+    try {
+      const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+      const result = await client.list()
+      return {
+        sandboxes: result.items.map((s) => ({
+          id: s.id,
+          state: s.state || "unknown",
+          createdAt: s.createdAt,
+          labels: s.labels
+        }))
+      }
+    } catch (error) {
+      console.error("[Daytona] List sandboxes error:", error)
+      return {
+        error: error instanceof Error ? error.message : "Failed to list sandboxes",
+        sandboxes: []
+      }
+    }
+  })
+
+  ipcMain.handle(
+    "daytona:createSandbox",
+    async (
+      _event,
+      {
+        language,
+        envVars
+      }: { language?: "typescript" | "python" | "javascript"; envVars?: Record<string, string> }
+    ) => {
+      const credentials = getDaytonaCredentials()
+      if (!credentials) {
+        return { error: "Daytona credentials not configured" }
+      }
+
+      try {
+        const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+        console.log("[Daytona] Creating new ephemeral sandbox...")
+        const sandbox = await client.create({
+          language: language || "typescript",
+          envVars,
+          autoStopInterval: 15, // 15 minutes auto-stop (idle timeout)
+          ephemeral: true // Auto-delete when stopped
+        })
+        console.log(`[Daytona] Created ephemeral sandbox: ${sandbox.id}`)
+        return {
+          id: sandbox.id,
+          state: sandbox.state || "running"
+        }
+      } catch (error) {
+        console.error("[Daytona] Create sandbox error:", error)
+        return { error: error instanceof Error ? error.message : "Failed to create sandbox" }
+      }
+    }
+  )
+
+  ipcMain.handle("daytona:deleteSandbox", async (_event, { sandboxId }: { sandboxId: string }) => {
+    const credentials = getDaytonaCredentials()
+    if (!credentials) {
+      return { error: "Daytona credentials not configured" }
+    }
+
+    try {
+      const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+      const sandbox = await client.get(sandboxId)
+      await sandbox.delete()
+      console.log(`[Daytona] Deleted sandbox: ${sandboxId}`)
+      return { success: true }
+    } catch (error) {
+      console.error("[Daytona] Delete sandbox error:", error)
+      return { error: error instanceof Error ? error.message : "Failed to delete sandbox" }
+    }
+  })
+
+  ipcMain.handle("daytona:startSandbox", async (_event, { sandboxId }: { sandboxId: string }) => {
+    const credentials = getDaytonaCredentials()
+    if (!credentials) {
+      return { error: "Daytona credentials not configured" }
+    }
+
+    try {
+      const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+      const sandbox = await client.get(sandboxId)
+      await sandbox.start()
+      console.log(`[Daytona] Started sandbox: ${sandboxId}`)
+      return { success: true }
+    } catch (error) {
+      console.error("[Daytona] Start sandbox error:", error)
+      return { error: error instanceof Error ? error.message : "Failed to start sandbox" }
+    }
+  })
+
+  ipcMain.handle("daytona:stopSandbox", async (_event, { sandboxId }: { sandboxId: string }) => {
+    const credentials = getDaytonaCredentials()
+    if (!credentials) {
+      return { error: "Daytona credentials not configured" }
+    }
+
+    try {
+      const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+      const sandbox = await client.get(sandboxId)
+      await sandbox.stop()
+      console.log(`[Daytona] Stopped sandbox: ${sandboxId}`)
+      return { success: true }
+    } catch (error) {
+      console.error("[Daytona] Stop sandbox error:", error)
+      return { error: error instanceof Error ? error.message : "Failed to stop sandbox" }
+    }
+  })
+
+  // List files from a Daytona sandbox
+  ipcMain.handle(
+    "daytona:listFiles",
+    async (_event, { sandboxId, path }: { sandboxId: string; path?: string }) => {
+      const credentials = getDaytonaCredentials()
+      if (!credentials) {
+        return { error: "Daytona credentials not configured", files: [] }
+      }
+
+      try {
+        const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+        const sandbox = await client.get(sandboxId)
+
+        // Default to /home/daytona if no path specified
+        const listPath = path || "/home/daytona"
+        console.log(`[Daytona] Listing files in sandbox ${sandboxId} at ${listPath}`)
+
+        const files = await sandbox.fs.listFiles(listPath)
+
+        return {
+          files: files.map((f) => ({
+            path: `${listPath}/${f.name}`.replace(/\/+/g, "/"),
+            is_dir: f.isDir,
+            size: f.size,
+            modified_at: f.modTime
+          }))
+        }
+      } catch (error) {
+        console.error("[Daytona] List files error:", error)
+        return {
+          error: error instanceof Error ? error.message : "Failed to list files",
+          files: []
+        }
+      }
+    }
+  )
+
   // Sync version info
   ipcMain.on("app:version", (event) => {
     event.returnValue = app.getVersion()
@@ -455,17 +673,49 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     }
   })
 
-  // Read a single file's contents from disk
+  // Read a single file's contents from disk (or from Daytona sandbox)
   ipcMain.handle(
     "workspace:readFile",
     async (_event, { threadId, filePath }: WorkspaceFileParams) => {
       const { getThread } = await import("../db")
 
-      // Get workspace path from thread metadata
+      // Get workspace path and Daytona sandbox ID from thread metadata
       const thread = getThread(threadId)
       const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
       const workspacePath = metadata.workspacePath as string | null
+      const daytonaSandboxId = metadata.daytonaSandboxId as string | null
 
+      // Handle Daytona sandbox mode
+      if (daytonaSandboxId) {
+        const credentials = getDaytonaCredentials()
+        if (!credentials) {
+          return { success: false, error: "Daytona credentials not configured" }
+        }
+
+        try {
+          const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+          const sandbox = await client.get(daytonaSandboxId)
+
+          // File paths from Daytona are already absolute
+          console.log(`[Daytona] Reading file: ${filePath}`)
+          const buffer = await sandbox.fs.downloadFile(filePath)
+          const content = buffer.toString("utf-8")
+
+          return {
+            success: true,
+            content,
+            size: buffer.length
+          }
+        } catch (error) {
+          console.error("[Daytona] Read file error:", error)
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to read file"
+          }
+        }
+      }
+
+      // Local filesystem mode
       if (!workspacePath) {
         return {
           success: false,
@@ -515,11 +765,43 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     async (_event, { threadId, filePath }: WorkspaceFileParams) => {
       const { getThread } = await import("../db")
 
-      // Get workspace path from thread metadata
+      // Get workspace path and Daytona sandbox ID from thread metadata
       const thread = getThread(threadId)
       const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
       const workspacePath = metadata.workspacePath as string | null
+      const daytonaSandboxId = metadata.daytonaSandboxId as string | null
 
+      // Handle Daytona sandbox mode
+      if (daytonaSandboxId) {
+        const credentials = getDaytonaCredentials()
+        if (!credentials) {
+          return { success: false, error: "Daytona credentials not configured" }
+        }
+
+        try {
+          const client = createDaytonaClient(credentials.apiKey, credentials.apiUrl)
+          const sandbox = await client.get(daytonaSandboxId)
+
+          // File paths from Daytona are already absolute
+          console.log(`[Daytona] Reading binary file: ${filePath}`)
+          const buffer = await sandbox.fs.downloadFile(filePath)
+          const base64 = buffer.toString("base64")
+
+          return {
+            success: true,
+            content: base64,
+            size: buffer.length
+          }
+        } catch (error) {
+          console.error("[Daytona] Read binary file error:", error)
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to read file"
+          }
+        }
+      }
+
+      // Local filesystem mode
       if (!workspacePath) {
         return {
           success: false,

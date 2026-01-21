@@ -150,6 +150,69 @@ const api = {
       return ipcRenderer.invoke("models:deleteApiKey", provider)
     }
   },
+  bluesky: {
+    hasCredentials: (): Promise<boolean> => {
+      return ipcRenderer.invoke("bluesky:hasCredentials")
+    },
+    getCredentials: (): Promise<{ identifier: string; hasPassword: boolean } | null> => {
+      return ipcRenderer.invoke("bluesky:getCredentials")
+    },
+    setCredentials: (identifier: string, appPassword: string): Promise<void> => {
+      return ipcRenderer.invoke("bluesky:setCredentials", { identifier, appPassword })
+    },
+    deleteCredentials: (): Promise<void> => {
+      return ipcRenderer.invoke("bluesky:deleteCredentials")
+    }
+  },
+  daytona: {
+    hasCredentials: (): Promise<boolean> => {
+      return ipcRenderer.invoke("daytona:hasCredentials")
+    },
+    getCredentials: (): Promise<{ apiUrl: string; hasApiKey: boolean } | null> => {
+      return ipcRenderer.invoke("daytona:getCredentials")
+    },
+    setCredentials: (apiKey: string, apiUrl?: string): Promise<void> => {
+      return ipcRenderer.invoke("daytona:setCredentials", { apiKey, apiUrl })
+    },
+    deleteCredentials: (): Promise<void> => {
+      return ipcRenderer.invoke("daytona:deleteCredentials")
+    },
+    listSandboxes: (): Promise<{
+      error?: string
+      sandboxes: Array<{
+        id: string
+        state: string
+        createdAt?: string
+        labels?: Record<string, string>
+      }>
+    }> => {
+      return ipcRenderer.invoke("daytona:listSandboxes")
+    },
+    createSandbox: (options?: {
+      language?: "typescript" | "python" | "javascript"
+      envVars?: Record<string, string>
+    }): Promise<{ id?: string; state?: string; error?: string }> => {
+      return ipcRenderer.invoke("daytona:createSandbox", options || {})
+    },
+    deleteSandbox: (sandboxId: string): Promise<{ success?: boolean; error?: string }> => {
+      return ipcRenderer.invoke("daytona:deleteSandbox", { sandboxId })
+    },
+    startSandbox: (sandboxId: string): Promise<{ success?: boolean; error?: string }> => {
+      return ipcRenderer.invoke("daytona:startSandbox", { sandboxId })
+    },
+    stopSandbox: (sandboxId: string): Promise<{ success?: boolean; error?: string }> => {
+      return ipcRenderer.invoke("daytona:stopSandbox", { sandboxId })
+    },
+    listFiles: (
+      sandboxId: string,
+      path?: string
+    ): Promise<{
+      files: Array<{ path: string; is_dir: boolean; size?: number; modified_at?: string }>
+      error?: string
+    }> => {
+      return ipcRenderer.invoke("daytona:listFiles", { sandboxId, path })
+    }
+  },
   workspace: {
     get: (threadId?: string): Promise<string | null> => {
       return ipcRenderer.invoke("workspace:get", threadId)
