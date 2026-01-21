@@ -5,6 +5,7 @@ import { getApiKey, getThreadCheckpointPath } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
+import { ChatMistralAI } from "@langchain/mistralai"
 import { SqlJsSaver } from "../checkpointer/sqljs-saver"
 import { LocalSandbox } from "./local-sandbox"
 
@@ -61,7 +62,7 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 // Get the appropriate model instance based on configuration
 function getModelInstance(
   modelId?: string
-): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
+): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | ChatMistralAI | string {
   const model = modelId || getDefaultModel()
   console.log("[Runtime] Using model:", model)
 
@@ -98,6 +99,21 @@ function getModelInstance(
       throw new Error("Google API key not configured")
     }
     return new ChatGoogleGenerativeAI({
+      model,
+      apiKey: apiKey
+    })
+  } else if (
+    model.startsWith("mistral") ||
+    model.startsWith("codestral") ||
+    model.startsWith("pixtral") ||
+    model.startsWith("ministral")
+  ) {
+    const apiKey = getApiKey("mistral")
+    console.log("[Runtime] Mistral API key present:", !!apiKey)
+    if (!apiKey) {
+      throw new Error("Mistral API key not configured")
+    }
+    return new ChatMistralAI({
       model,
       apiKey: apiKey
     })

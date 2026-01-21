@@ -33,10 +33,19 @@ function GoogleIcon({ className }: { className?: string }): React.JSX.Element {
   )
 }
 
+function MistralIcon({ className }: { className?: string }): React.JSX.Element {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 3h4v4H3V3zm7 0h4v4h-4V3zm7 0h4v4h-4V3zM3 10h4v4H3v-4zm14 0h4v4h-4v-4zM3 17h4v4H3v-4zm7 0h4v4h-4v-4zm7 0h4v4h-4v-4zm-7-7h4v4h-4v-4z" />
+    </svg>
+  )
+}
+
 const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
+  mistral: MistralIcon,
   ollama: () => null // No icon for ollama yet
 }
 
@@ -44,7 +53,8 @@ const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
 const FALLBACK_PROVIDERS: Provider[] = [
   { id: "anthropic", name: "Anthropic", hasApiKey: false },
   { id: "openai", name: "OpenAI", hasApiKey: false },
-  { id: "google", name: "Google", hasApiKey: false }
+  { id: "google", name: "Google", hasApiKey: false },
+  { id: "mistral", name: "Mistral", hasApiKey: false }
 ]
 
 interface ModelSwitcherProps {

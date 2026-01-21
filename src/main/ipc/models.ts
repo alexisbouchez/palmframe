@@ -23,7 +23,8 @@ const store = new Store({
 const PROVIDERS: Omit<Provider, "hasApiKey">[] = [
   { id: "anthropic", name: "Anthropic" },
   { id: "openai", name: "OpenAI" },
-  { id: "google", name: "Google" }
+  { id: "google", name: "Google" },
+  { id: "mistral", name: "Mistral" }
 ]
 
 // Available models configuration (updated Jan 2026)
@@ -200,6 +201,55 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     provider: "google",
     model: "gemini-2.5-flash-lite",
     description: "Fast, low-cost, high-performance model",
+    available: true
+  },
+  // Mistral AI models
+  {
+    id: "mistral-large-latest",
+    name: "Mistral Large",
+    provider: "mistral",
+    model: "mistral-large-latest",
+    description: "Flagship model with top-tier reasoning and multilingual capabilities",
+    available: true
+  },
+  {
+    id: "mistral-medium-latest",
+    name: "Mistral Medium",
+    provider: "mistral",
+    model: "mistral-medium-latest",
+    description: "Balanced model for complex tasks with good cost efficiency",
+    available: true
+  },
+  {
+    id: "mistral-small-latest",
+    name: "Mistral Small",
+    provider: "mistral",
+    model: "mistral-small-latest",
+    description: "Fast and cost-effective for simpler tasks",
+    available: true
+  },
+  {
+    id: "codestral-latest",
+    name: "Codestral",
+    provider: "mistral",
+    model: "codestral-latest",
+    description: "Specialized model for code generation and understanding",
+    available: true
+  },
+  {
+    id: "pixtral-large-latest",
+    name: "Pixtral Large",
+    provider: "mistral",
+    model: "pixtral-large-latest",
+    description: "Multimodal model with advanced vision capabilities",
+    available: true
+  },
+  {
+    id: "ministral-8b-latest",
+    name: "Ministral 8B",
+    provider: "mistral",
+    model: "ministral-8b-latest",
+    description: "Compact model optimized for edge deployment and low latency",
     available: true
   }
 ]
