@@ -228,6 +228,7 @@ export class DaytonaSandbox implements SandboxBackendProtocol {
     _glob?: string | null
   ): Promise<GrepMatch[] | string> {
     try {
+      void _glob
       const sandbox = await this.ensureInitialized()
       const searchPath = this.resolvePath(path || this.workingDir)
 

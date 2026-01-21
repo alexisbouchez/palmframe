@@ -50,7 +50,11 @@ export function WorkspacePicker({ threadId }: WorkspacePickerProps): React.JSX.E
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<WorkspaceMode>(
-    contextE2bSandboxId ? "e2b" : contextDaytonaSandboxId ? "daytona" : "local"
+    contextE2bSandboxId
+      ? "e2b"
+      : contextDaytonaSandboxId
+        ? "daytona"
+        : "local"
   )
 
   // Daytona state
@@ -76,7 +80,11 @@ export function WorkspacePicker({ threadId }: WorkspacePickerProps): React.JSX.E
     setSelectedDaytonaSandboxId(contextDaytonaSandboxId)
     setSelectedE2bSandboxId(contextE2bSandboxId)
     setMode(
-      contextE2bSandboxId ? "e2b" : contextDaytonaSandboxId ? "daytona" : workspacePath ? "local" : "local"
+      contextE2bSandboxId
+        ? "e2b"
+        : contextDaytonaSandboxId
+          ? "daytona"
+          : "local"
     )
   }, [contextDaytonaSandboxId, contextE2bSandboxId, workspacePath])
 

@@ -17,10 +17,6 @@ import { config, getProviderApiKey } from "@/server/config"
 import { DEFAULT_MODEL } from "@/lib/models"
 import { generateSystemPrompt } from "./system-prompt"
 
-import type * as _lcTypes from "langchain"
-import type * as _lcMessages from "@langchain/core/messages"
-import type * as _lcLanggraph from "@langchain/langgraph"
-import type * as _lcZodTypes from "@langchain/core/utils/types"
 
 // Shared PostgreSQL checkpointer instance
 let sharedCheckpointer: PostgresSaver | null = null

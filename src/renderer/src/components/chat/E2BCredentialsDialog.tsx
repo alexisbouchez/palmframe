@@ -67,9 +67,7 @@ export function E2BCredentialsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle>
-            {hasExisting ? "Update E2B Credentials" : "Configure E2B"}
-          </DialogTitle>
+          <DialogTitle>{hasExisting ? "Update E2B Credentials" : "Configure E2B"}</DialogTitle>
           <DialogDescription>
             {hasExisting
               ? "API key is configured. Enter a new API key to update."

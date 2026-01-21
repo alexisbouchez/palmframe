@@ -72,8 +72,10 @@ export async function POST(request: NextRequest) {
         break
       default:
         // Fallback to simple title
-        const simpleTitle = message.slice(0, 50).trim() + (message.length > 50 ? "..." : "")
-        return NextResponse.json({ title: simpleTitle })
+        {
+          const simpleTitle = message.slice(0, 50).trim() + (message.length > 50 ? "..." : "")
+          return NextResponse.json({ title: simpleTitle })
+        }
     }
 
     // Generate title

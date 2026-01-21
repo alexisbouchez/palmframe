@@ -465,10 +465,7 @@ export class E2BSandbox implements SandboxBackendProtocol {
 /**
  * Connect to an existing E2B sandbox.
  */
-export async function connectToE2BSandbox(
-  sandboxId: string,
-  apiKey: string
-): Promise<Sandbox> {
+export async function connectToE2BSandbox(sandboxId: string, apiKey: string): Promise<Sandbox> {
   return Sandbox.connect(sandboxId, { apiKey })
 }
 

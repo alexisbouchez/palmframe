@@ -532,7 +532,7 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
             actions.setE2bSandboxId(metadata.e2bSandboxId as string)
             actions.setDaytonaSandboxId(null)
             actions.setWorkspacePath(null)
-          // Then check for Daytona sandbox
+            // Then check for Daytona sandbox
           } else if (metadata.daytonaSandboxId) {
             actions.setDaytonaSandboxId(metadata.daytonaSandboxId as string)
             actions.setE2bSandboxId(null)
