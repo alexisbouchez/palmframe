@@ -13,7 +13,12 @@ import {
   Clock,
   XCircle,
   File,
-  Folder
+  Folder,
+  MessageCircle,
+  User,
+  Heart,
+  Repeat2,
+  ExternalLink
 } from "lucide-react"
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -37,7 +42,9 @@ const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   grep: Search,
   execute: Terminal,
   write_todos: ListTodo,
-  task: GitBranch
+  task: GitBranch,
+  search_bluesky: MessageCircle,
+  get_bluesky_profile: User
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -49,7 +56,9 @@ const TOOL_LABELS: Record<string, string> = {
   grep: "Search Content",
   execute: "Execute Command",
   write_todos: "Update Tasks",
-  task: "Subagent Task"
+  task: "Subagent Task",
+  search_bluesky: "Bluesky Search",
+  get_bluesky_profile: "Bluesky Profile"
 }
 
 // Tools whose results are shown in the UI panels and don't need verbose display
@@ -167,6 +176,136 @@ function GrepResultsDisplay({
       {hasMore && (
         <div className="text-xs text-muted-foreground">
           ... matches in {Object.keys(grouped).length - 5} more files
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Render Bluesky posts
+interface BlueskyPost {
+  author: { handle: string; displayName?: string }
+  text: string
+  createdAt?: string
+  likeCount?: number
+  repostCount?: number
+  replyCount?: number
+  url?: string
+}
+
+function BlueskyPostsDisplay({ posts }: { posts: BlueskyPost[] }): React.JSX.Element {
+  const displayPosts = posts.slice(0, 5)
+  const hasMore = posts.length > 5
+
+  return (
+    <div className="space-y-2">
+      {displayPosts.map((post, i) => (
+        <div key={i} className="text-xs border border-border rounded-sm p-2 space-y-1">
+          <div className="flex items-center gap-2">
+            <User className="size-3 text-status-info shrink-0" />
+            <span className="font-medium truncate">
+              {post.author.displayName || post.author.handle}
+            </span>
+            <span className="text-muted-foreground truncate">@{post.author.handle}</span>
+          </div>
+          <p className="text-muted-foreground line-clamp-3">{post.text}</p>
+          <div className="flex items-center gap-3 text-muted-foreground">
+            {post.likeCount !== undefined && (
+              <span className="flex items-center gap-1">
+                <Heart className="size-3" />
+                {post.likeCount}
+              </span>
+            )}
+            {post.repostCount !== undefined && (
+              <span className="flex items-center gap-1">
+                <Repeat2 className="size-3" />
+                {post.repostCount}
+              </span>
+            )}
+            {post.replyCount !== undefined && (
+              <span className="flex items-center gap-1">
+                <MessageCircle className="size-3" />
+                {post.replyCount}
+              </span>
+            )}
+            {post.url && (
+              <a
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-status-info transition-colors ml-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="size-3" />
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+      {hasMore && (
+        <div className="text-xs text-muted-foreground">... and {posts.length - 5} more posts</div>
+      )}
+    </div>
+  )
+}
+
+// Render Bluesky profile
+interface BlueskyProfile {
+  handle: string
+  displayName?: string
+  description?: string
+  followersCount?: number
+  followsCount?: number
+  postsCount?: number
+  url?: string
+  recentPosts?: BlueskyPost[]
+}
+
+function BlueskyProfileDisplay({ profile }: { profile: BlueskyProfile }): React.JSX.Element {
+  return (
+    <div className="text-xs space-y-2">
+      <div className="flex items-center gap-2">
+        <User className="size-4 text-status-info shrink-0" />
+        <div className="min-w-0">
+          <div className="font-medium truncate">{profile.displayName || profile.handle}</div>
+          <div className="text-muted-foreground truncate">@{profile.handle}</div>
+        </div>
+        {profile.url && (
+          <a
+            href={profile.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto text-muted-foreground hover:text-status-info transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="size-3" />
+          </a>
+        )}
+      </div>
+      {profile.description && (
+        <p className="text-muted-foreground line-clamp-2">{profile.description}</p>
+      )}
+      <div className="flex items-center gap-4 text-muted-foreground">
+        {profile.followersCount !== undefined && (
+          <span>
+            <strong className="text-foreground">{profile.followersCount}</strong> followers
+          </span>
+        )}
+        {profile.followsCount !== undefined && (
+          <span>
+            <strong className="text-foreground">{profile.followsCount}</strong> following
+          </span>
+        )}
+        {profile.postsCount !== undefined && (
+          <span>
+            <strong className="text-foreground">{profile.postsCount}</strong> posts
+          </span>
+        )}
+      </div>
+      {profile.recentPosts && profile.recentPosts.length > 0 && (
+        <div className="pt-1 border-t border-border">
+          <div className="text-section-header mb-1">RECENT POSTS</div>
+          <BlueskyPostsDisplay posts={profile.recentPosts} />
         </div>
       )}
     </div>
@@ -536,6 +675,73 @@ export function ToolCallRenderer({
             <span>Task completed</span>
           </div>
         )
+      }
+
+      case "search_bluesky": {
+        // Parse the JSON result
+        try {
+          const data =
+            typeof result === "string" ? JSON.parse(result) : (result as Record<string, unknown>)
+          if (data.error) {
+            return (
+              <div className="text-xs text-status-critical flex items-center gap-1.5">
+                <XCircle className="size-3" />
+                <span>{data.error}</span>
+              </div>
+            )
+          }
+          const posts = (data.posts || []) as BlueskyPost[]
+          return (
+            <div className="space-y-2">
+              <div className="text-xs text-status-nominal flex items-center gap-1.5">
+                <CheckCircle2 className="size-3" />
+                <span>
+                  Found {posts.length} post{posts.length !== 1 ? "s" : ""} for "{data.query}"
+                </span>
+              </div>
+              {posts.length > 0 && <BlueskyPostsDisplay posts={posts} />}
+            </div>
+          )
+        } catch {
+          return (
+            <div className="text-xs text-status-nominal flex items-center gap-1.5">
+              <CheckCircle2 className="size-3" />
+              <span>Search completed</span>
+            </div>
+          )
+        }
+      }
+
+      case "get_bluesky_profile": {
+        // Parse the JSON result
+        try {
+          const data =
+            typeof result === "string" ? JSON.parse(result) : (result as Record<string, unknown>)
+          if (data.error) {
+            return (
+              <div className="text-xs text-status-critical flex items-center gap-1.5">
+                <XCircle className="size-3" />
+                <span>{data.error}</span>
+              </div>
+            )
+          }
+          return (
+            <div className="space-y-2">
+              <div className="text-xs text-status-nominal flex items-center gap-1.5">
+                <CheckCircle2 className="size-3" />
+                <span>Profile loaded</span>
+              </div>
+              <BlueskyProfileDisplay profile={data as BlueskyProfile} />
+            </div>
+          )
+        } catch {
+          return (
+            <div className="text-xs text-status-nominal flex items-center gap-1.5">
+              <CheckCircle2 className="size-3" />
+              <span>Profile loaded</span>
+            </div>
+          )
+        }
       }
 
       default: {

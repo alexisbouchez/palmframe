@@ -15,6 +15,7 @@ import type * as _lcLanggraph from "@langchain/langgraph"
 import type * as _lcZodTypes from "@langchain/core/utils/types"
 
 import { BASE_SYSTEM_PROMPT } from "./system-prompt"
+import { blueskyTools } from "./tools/bluesky"
 
 /**
  * Generate the full system prompt for the agent.
@@ -186,6 +187,8 @@ The workspace root is: ${workspacePath}`
     systemPrompt,
     // Custom filesystem prompt for absolute paths (requires deepagents update)
     filesystemSystemPrompt,
+    // Add Bluesky social search tools
+    tools: blueskyTools,
     // Require human approval for all shell commands
     interruptOn: { execute: true }
   } as Parameters<typeof createDeepAgent>[0])
