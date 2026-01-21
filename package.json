@@ -11,8 +11,7 @@
     "README.md"
   ],
   "bin": {
-    "palmframe": "./bin/cli.js",
-    "openwork": "./bin/cli.js"
+    "palmframe": "./bin/cli.js"
   },
   "author": "LangChain",
   "license": "MIT",

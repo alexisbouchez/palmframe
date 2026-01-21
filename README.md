@@ -24,8 +24,6 @@ npx palmframe
 npm install -g palmframe
 palmframe
 
-# Legacy command (still supported)
-openwork
 ```
 
 Requires Node.js 18+.

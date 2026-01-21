@@ -12,7 +12,7 @@ import type {
 } from "../types"
 import { startWatching, stopWatching } from "../services/workspace-watcher"
 import {
-  getOpenworkDir,
+  getPalmframeDir,
   getApiKey,
   setApiKey,
   deleteApiKey,
@@ -37,7 +37,7 @@ import { Sandbox as E2BSandbox } from "e2b"
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
   name: "settings",
-  cwd: getOpenworkDir()
+  cwd: getPalmframeDir()
 })
 
 // Provider configurations
@@ -295,12 +295,12 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     store.set("defaultModel", modelId)
   })
 
-  // Set API key for a provider (stored in ~/.palmframe/.env, falls back to legacy ~/.openwork/.env)
+  // Set API key for a provider (stored in ~/.palmframe/.env, falls back to legacy data directory)
   ipcMain.handle("models:setApiKey", async (_event, { provider, apiKey }: SetApiKeyParams) => {
     setApiKey(provider, apiKey)
   })
 
-  // Get API key for a provider (from ~/.palmframe/.env, legacy ~/.openwork/.env, or process.env)
+  // Get API key for a provider (from ~/.palmframe/.env, legacy data directory, or process.env)
   ipcMain.handle("models:getApiKey", async (_event, provider: string) => {
     return getApiKey(provider) ?? null
   })

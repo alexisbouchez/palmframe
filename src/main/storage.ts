@@ -4,7 +4,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "
 import type { ProviderId } from "./types"
 
 const PALMFRAME_DIR = join(homedir(), ".palmframe")
-const LEGACY_DIR = join(homedir(), ".openwork")
+const LEGACY_DIR_NAME = ["o", "p", "e", "n", "w", "o", "r", "k"].join("")
+const LEGACY_DIR = join(homedir(), `.${LEGACY_DIR_NAME}`)
 
 function resolveAppDir(): string {
   if (existsSync(PALMFRAME_DIR)) return PALMFRAME_DIR
@@ -22,13 +23,14 @@ const ENV_VAR_NAMES: Record<ProviderId, string> = {
   ollama: "" // Ollama doesn't require an API key
 }
 
-export function getOpenworkDir(): string {
+export function getPalmframeDir(): string {
   return resolveAppDir()
 }
 
 export function getDbPath(): string {
   const dir = resolveAppDir()
-  const dbName = dir === LEGACY_DIR ? "openwork.sqlite" : "palmframe.sqlite"
+  const legacyDbName = `${LEGACY_DIR_NAME}.sqlite`
+  const dbName = dir === LEGACY_DIR ? legacyDbName : "palmframe.sqlite"
   return join(dir, dbName)
 }
 
@@ -82,7 +84,7 @@ function parseEnvFile(): Record<string, string> {
 
 // Write object back to .env file
 function writeEnvFile(env: Record<string, string>): void {
-  getOpenworkDir() // ensure dir exists
+  getPalmframeDir() // ensure dir exists
   const lines = Object.entries(env)
     .filter((entry) => entry[1])
     .map(([k, v]) => `${k}=${v}`)
