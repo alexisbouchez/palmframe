@@ -206,7 +206,7 @@ export class PostgresSaver extends BaseCheckpointSaver {
 
     const preparedCheckpoint = copyCheckpoint(checkpoint)
 
-    const [[type1, serializedCheckpoint], [type2, serializedMetadata]] = await Promise.all([
+    const [[type1, serializedCheckpoint], [, serializedMetadata]] = await Promise.all([
       this.serde.dumpsTyped(preparedCheckpoint),
       this.serde.dumpsTyped(metadata)
     ])
