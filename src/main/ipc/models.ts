@@ -24,9 +24,14 @@ import {
   getDaytonaCredentials,
   setDaytonaCredentials,
   deleteDaytonaCredentials,
-  hasDaytonaCredentials
+  hasDaytonaCredentials,
+  getE2BCredentials,
+  setE2BCredentials,
+  deleteE2BCredentials,
+  hasE2BCredentials
 } from "../storage"
 import { createDaytonaClient } from "../agent/daytona-sandbox"
+import { Sandbox as E2BSandbox } from "e2b"
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -515,6 +520,174 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     }
   )
 
+  // E2B credentials management
+  ipcMain.handle("e2b:hasCredentials", async () => {
+    return hasE2BCredentials()
+  })
+
+  ipcMain.handle("e2b:getCredentials", async () => {
+    const credentials = getE2BCredentials()
+    if (credentials) {
+      // Return that API key is set (don't expose the actual key)
+      return { hasApiKey: true }
+    }
+    return null
+  })
+
+  ipcMain.handle("e2b:setCredentials", async (_event, { apiKey }: { apiKey: string }) => {
+    setE2BCredentials(apiKey)
+  })
+
+  ipcMain.handle("e2b:deleteCredentials", async () => {
+    deleteE2BCredentials()
+  })
+
+  // E2B sandbox management
+  ipcMain.handle("e2b:listSandboxes", async () => {
+    const credentials = getE2BCredentials()
+    if (!credentials) {
+      return { error: "E2B credentials not configured", sandboxes: [] }
+    }
+
+    try {
+      const sandboxes: Array<{
+        sandboxId: string
+        templateId?: string
+        startedAt?: string
+        metadata?: Record<string, string>
+      }> = []
+
+      // E2B uses pagination via hasNext/nextItems
+      const paginator = E2BSandbox.list({ apiKey: credentials.apiKey })
+      while (paginator.hasNext) {
+        const items = await paginator.nextItems()
+        for (const sandbox of items) {
+          sandboxes.push({
+            sandboxId: sandbox.sandboxId,
+            templateId: sandbox.templateId,
+            startedAt: sandbox.startedAt?.toISOString(),
+            metadata: sandbox.metadata
+          })
+        }
+      }
+
+      return { sandboxes }
+    } catch (error) {
+      console.error("[E2B] List sandboxes error:", error)
+      return {
+        error: error instanceof Error ? error.message : "Failed to list sandboxes",
+        sandboxes: []
+      }
+    }
+  })
+
+  ipcMain.handle(
+    "e2b:createSandbox",
+    async (_event, { template, timeoutMs }: { template?: string; timeoutMs?: number }) => {
+      const credentials = getE2BCredentials()
+      if (!credentials) {
+        return { error: "E2B credentials not configured" }
+      }
+
+      try {
+        console.log("[E2B] Creating new sandbox...")
+        const sandbox = await E2BSandbox.create(template || "base", {
+          apiKey: credentials.apiKey,
+          timeoutMs: timeoutMs ?? 300_000 // 5 min default
+        })
+        console.log(`[E2B] Created sandbox: ${sandbox.sandboxId}`)
+
+        // Ensure working directory exists
+        try {
+          await sandbox.files.makeDir("/home/user")
+        } catch {
+          // May already exist
+        }
+
+        return {
+          sandboxId: sandbox.sandboxId,
+          templateId: template || "base"
+        }
+      } catch (error) {
+        console.error("[E2B] Create sandbox error:", error)
+        return { error: error instanceof Error ? error.message : "Failed to create sandbox" }
+      }
+    }
+  )
+
+  ipcMain.handle("e2b:killSandbox", async (_event, { sandboxId }: { sandboxId: string }) => {
+    const credentials = getE2BCredentials()
+    if (!credentials) {
+      return { error: "E2B credentials not configured" }
+    }
+
+    try {
+      const sandbox = await E2BSandbox.connect(sandboxId, { apiKey: credentials.apiKey })
+      await sandbox.kill()
+      console.log(`[E2B] Killed sandbox: ${sandboxId}`)
+      return { success: true }
+    } catch (error) {
+      console.error("[E2B] Kill sandbox error:", error)
+      return { error: error instanceof Error ? error.message : "Failed to kill sandbox" }
+    }
+  })
+
+  ipcMain.handle(
+    "e2b:setTimeout",
+    async (_event, { sandboxId, timeoutMs }: { sandboxId: string; timeoutMs: number }) => {
+      const credentials = getE2BCredentials()
+      if (!credentials) {
+        return { error: "E2B credentials not configured" }
+      }
+
+      try {
+        const sandbox = await E2BSandbox.connect(sandboxId, { apiKey: credentials.apiKey })
+        await sandbox.setTimeout(timeoutMs)
+        console.log(`[E2B] Extended sandbox timeout: ${sandboxId}`)
+        return { success: true }
+      } catch (error) {
+        console.error("[E2B] Set timeout error:", error)
+        return { error: error instanceof Error ? error.message : "Failed to set timeout" }
+      }
+    }
+  )
+
+  // List files from an E2B sandbox
+  ipcMain.handle(
+    "e2b:listFiles",
+    async (_event, { sandboxId, path }: { sandboxId: string; path?: string }) => {
+      const credentials = getE2BCredentials()
+      if (!credentials) {
+        return { error: "E2B credentials not configured", files: [] }
+      }
+
+      try {
+        const sandbox = await E2BSandbox.connect(sandboxId, { apiKey: credentials.apiKey })
+
+        // Default to /home/user if no path specified
+        const listPath = path || "/home/user"
+        console.log(`[E2B] Listing files in sandbox ${sandboxId} at ${listPath}`)
+
+        const entries = await sandbox.files.list(listPath)
+
+        return {
+          files: entries.map((e) => ({
+            path: `${listPath}/${e.name}`.replace(/\/+/g, "/"),
+            is_dir: e.type === "dir",
+            size: undefined, // E2B doesn't provide size in list
+            modified_at: undefined
+          }))
+        }
+      } catch (error) {
+        console.error("[E2B] List files error:", error)
+        return {
+          error: error instanceof Error ? error.message : "Failed to list files",
+          files: []
+        }
+      }
+    }
+  )
+
   // Sync version info
   ipcMain.on("app:version", (event) => {
     event.returnValue = app.getVersion()
@@ -673,17 +846,46 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     }
   })
 
-  // Read a single file's contents from disk (or from Daytona sandbox)
+  // Read a single file's contents from disk (or from Daytona/E2B sandbox)
   ipcMain.handle(
     "workspace:readFile",
     async (_event, { threadId, filePath }: WorkspaceFileParams) => {
       const { getThread } = await import("../db")
 
-      // Get workspace path and Daytona sandbox ID from thread metadata
+      // Get workspace path and sandbox IDs from thread metadata
       const thread = getThread(threadId)
       const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
       const workspacePath = metadata.workspacePath as string | null
       const daytonaSandboxId = metadata.daytonaSandboxId as string | null
+      const e2bSandboxId = metadata.e2bSandboxId as string | null
+
+      // Handle E2B sandbox mode
+      if (e2bSandboxId) {
+        const credentials = getE2BCredentials()
+        if (!credentials) {
+          return { success: false, error: "E2B credentials not configured" }
+        }
+
+        try {
+          const sandbox = await E2BSandbox.connect(e2bSandboxId, { apiKey: credentials.apiKey })
+
+          // File paths from E2B are already absolute
+          console.log(`[E2B] Reading file: ${filePath}`)
+          const content = await sandbox.files.read(filePath, { format: "text" })
+
+          return {
+            success: true,
+            content,
+            size: content.length
+          }
+        } catch (error) {
+          console.error("[E2B] Read file error:", error)
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to read file"
+          }
+        }
+      }
 
       // Handle Daytona sandbox mode
       if (daytonaSandboxId) {
@@ -765,11 +967,41 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     async (_event, { threadId, filePath }: WorkspaceFileParams) => {
       const { getThread } = await import("../db")
 
-      // Get workspace path and Daytona sandbox ID from thread metadata
+      // Get workspace path and sandbox IDs from thread metadata
       const thread = getThread(threadId)
       const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
       const workspacePath = metadata.workspacePath as string | null
       const daytonaSandboxId = metadata.daytonaSandboxId as string | null
+      const e2bSandboxId = metadata.e2bSandboxId as string | null
+
+      // Handle E2B sandbox mode
+      if (e2bSandboxId) {
+        const credentials = getE2BCredentials()
+        if (!credentials) {
+          return { success: false, error: "E2B credentials not configured" }
+        }
+
+        try {
+          const sandbox = await E2BSandbox.connect(e2bSandboxId, { apiKey: credentials.apiKey })
+
+          // File paths from E2B are already absolute
+          console.log(`[E2B] Reading binary file: ${filePath}`)
+          const bytes = await sandbox.files.read(filePath, { format: "bytes" })
+          const base64 = Buffer.from(bytes).toString("base64")
+
+          return {
+            success: true,
+            content: base64,
+            size: bytes.length
+          }
+        } catch (error) {
+          console.error("[E2B] Read binary file error:", error)
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to read file"
+          }
+        }
+      }
 
       // Handle Daytona sandbox mode
       if (daytonaSandboxId) {

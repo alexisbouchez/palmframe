@@ -88,6 +88,37 @@ interface CustomAPI {
       error?: string
     }>
   }
+  e2b: {
+    hasCredentials: () => Promise<boolean>
+    getCredentials: () => Promise<{ hasApiKey: boolean } | null>
+    setCredentials: (apiKey: string) => Promise<void>
+    deleteCredentials: () => Promise<void>
+    listSandboxes: () => Promise<{
+      error?: string
+      sandboxes: Array<{
+        sandboxId: string
+        templateId?: string
+        startedAt?: string
+        metadata?: Record<string, string>
+      }>
+    }>
+    createSandbox: (options?: {
+      template?: string
+      timeoutMs?: number
+    }) => Promise<{ sandboxId?: string; templateId?: string; error?: string }>
+    killSandbox: (sandboxId: string) => Promise<{ success?: boolean; error?: string }>
+    setTimeout: (
+      sandboxId: string,
+      timeoutMs: number
+    ) => Promise<{ success?: boolean; error?: string }>
+    listFiles: (
+      sandboxId: string,
+      path?: string
+    ) => Promise<{
+      files: Array<{ path: string; is_dir: boolean; size?: number; modified_at?: string }>
+      error?: string
+    }>
+  }
   workspace: {
     get: (threadId?: string) => Promise<string | null>
     set: (threadId: string | undefined, path: string | null) => Promise<string | null>

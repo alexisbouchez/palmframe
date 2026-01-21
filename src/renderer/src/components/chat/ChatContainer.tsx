@@ -46,6 +46,7 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     error: threadError,
     workspacePath,
     daytonaSandboxId,
+    e2bSandboxId,
     tokenUsage,
     currentModel,
     setTodos,
@@ -57,8 +58,8 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     clearError
   } = useCurrentThread(threadId)
 
-  // Check if workspace is configured (either local folder or Daytona sandbox)
-  const hasWorkspace = !!workspacePath || !!daytonaSandboxId
+  // Check if workspace is configured (either local folder or cloud sandbox)
+  const hasWorkspace = !!workspacePath || !!daytonaSandboxId || !!e2bSandboxId
 
   // Get the stream data via subscription - reactive updates without re-rendering provider
   const streamData = useThreadStream(threadId)
@@ -226,7 +227,7 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     if (!input.trim() || isLoading || !stream) return
 
     if (!hasWorkspace) {
-      setError("Please select a workspace folder or Daytona sandbox before sending messages.")
+      setError("Please select a workspace folder or cloud sandbox before sending messages.")
       return
     }
 
@@ -306,9 +307,11 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
                 <div className="text-section-header mb-2">NEW THREAD</div>
                 {hasWorkspace ? (
                   <div className="text-sm">
-                    {daytonaSandboxId
-                      ? "Start a conversation with the agent (using Daytona sandbox)"
-                      : "Start a conversation with the agent"}
+                    {e2bSandboxId
+                      ? "Start a conversation with the agent (using E2B sandbox)"
+                      : daytonaSandboxId
+                        ? "Start a conversation with the agent (using Daytona sandbox)"
+                        : "Start a conversation with the agent"}
                   </div>
                 ) : (
                   <div className="text-sm text-center space-y-3">

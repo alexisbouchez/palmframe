@@ -72,6 +72,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "deepagents": "^1.5.0",
+    "e2b": "^2.10.3",
     "electron": "^39.2.6",
     "electron-store": "^8.2.0",
     "lucide-react": "^0.469.0",

@@ -514,14 +514,17 @@ function FilesContent(): React.JSX.Element {
   const workspaceFiles = threadState?.workspaceFiles ?? []
   const workspacePath = threadState?.workspacePath ?? null
   const daytonaSandboxId = threadState?.daytonaSandboxId ?? null
+  const e2bSandboxId = threadState?.e2bSandboxId ?? null
   const setWorkspacePath = threadState?.setWorkspacePath
   const setWorkspaceFiles = threadState?.setWorkspaceFiles
   const [syncing, setSyncing] = useState(false)
   const [syncSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Determine if we're in Daytona mode
+  // Determine sandbox mode
   const isDaytonaMode = !!daytonaSandboxId
+  const isE2BMode = !!e2bSandboxId
+  const isSandboxMode = isDaytonaMode || isE2BMode
 
   // Load workspace path and files for current thread
   useEffect(() => {
@@ -530,7 +533,14 @@ function FilesContent(): React.JSX.Element {
 
       setLoading(true)
       try {
-        if (daytonaSandboxId) {
+        if (e2bSandboxId) {
+          // Load files from E2B sandbox
+          console.log("[FilesContent] Loading files from E2B sandbox:", e2bSandboxId)
+          const result = await window.api.e2b.listFiles(e2bSandboxId)
+          if (result.files) {
+            setWorkspaceFiles(result.files)
+          }
+        } else if (daytonaSandboxId) {
           // Load files from Daytona sandbox
           console.log("[FilesContent] Loading files from Daytona sandbox:", daytonaSandboxId)
           const result = await window.api.daytona.listFiles(daytonaSandboxId)
@@ -557,11 +567,11 @@ function FilesContent(): React.JSX.Element {
     }
     loadWorkspace()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentThreadId, daytonaSandboxId])
+  }, [currentThreadId, daytonaSandboxId, e2bSandboxId])
 
   // Listen for file changes from the workspace watcher (local mode only)
   useEffect(() => {
-    if (!currentThreadId || !setWorkspaceFiles || isDaytonaMode) return
+    if (!currentThreadId || !setWorkspaceFiles || isSandboxMode) return
 
     const cleanup = window.api.workspace.onFilesChanged(async (data) => {
       // Only reload if the event is for the current thread
@@ -576,16 +586,23 @@ function FilesContent(): React.JSX.Element {
 
     return cleanup
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentThreadId, isDaytonaMode])
+  }, [currentThreadId, isSandboxMode])
 
-  // Handle refreshing files (for Daytona mode)
+  // Handle refreshing files (for sandbox modes)
   async function handleRefresh(): Promise<void> {
-    if (!daytonaSandboxId || !setWorkspaceFiles) return
+    if (!setWorkspaceFiles) return
     setSyncing(true)
     try {
-      const result = await window.api.daytona.listFiles(daytonaSandboxId)
-      if (result.files) {
-        setWorkspaceFiles(result.files)
+      if (e2bSandboxId) {
+        const result = await window.api.e2b.listFiles(e2bSandboxId)
+        if (result.files) {
+          setWorkspaceFiles(result.files)
+        }
+      } else if (daytonaSandboxId) {
+        const result = await window.api.daytona.listFiles(daytonaSandboxId)
+        if (result.files) {
+          setWorkspaceFiles(result.files)
+        }
       }
     } catch (e) {
       console.error("[FilesContent] Refresh error:", e)
@@ -640,25 +657,43 @@ function FilesContent(): React.JSX.Element {
     )
   }
 
+  // Get display info for sandbox modes
+  function getSandboxDisplayInfo(): { label: string; title: string } {
+    if (isE2BMode) {
+      return {
+        label: `E2B (${e2bSandboxId?.slice(0, 8)})`,
+        title: `/home/user (${e2bSandboxId})`
+      }
+    }
+    if (isDaytonaMode) {
+      return {
+        label: `Daytona (${daytonaSandboxId?.slice(0, 8)})`,
+        title: `/home/daytona (${daytonaSandboxId})`
+      }
+    }
+    return {
+      label: workspacePath ? workspacePath.split("/").pop() || "Workspace" : "No folder linked",
+      title: workspacePath || ""
+    }
+  }
+
+  const sandboxInfo = getSandboxDisplayInfo()
+
   return (
     <div className="flex flex-col h-full">
       {/* Header with sync/refresh button */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-background/30">
         <span
           className="text-[10px] text-muted-foreground truncate flex-1"
-          title={isDaytonaMode ? `/home/daytona (${daytonaSandboxId})` : workspacePath || undefined}
+          title={sandboxInfo.title}
         >
-          {isDaytonaMode
-            ? `Daytona (${daytonaSandboxId?.slice(0, 8)})`
-            : workspacePath
-              ? workspacePath.split("/").pop()
-              : "No folder linked"}
+          {sandboxInfo.label}
         </span>
         <Button
           variant="ghost"
           size="sm"
           onClick={
-            isDaytonaMode
+            isSandboxMode
               ? handleRefresh
               : workspaceFiles.length > 0
                 ? handleSyncToDisk
@@ -667,14 +702,14 @@ function FilesContent(): React.JSX.Element {
           disabled={syncing || !currentThreadId}
           className="h-5 px-1.5 text-[10px]"
           title={
-            isDaytonaMode ? "Refresh files" : workspacePath ? "Sync files" : "Link sync folder"
+            isSandboxMode ? "Refresh files" : workspacePath ? "Sync files" : "Link sync folder"
           }
         >
           {syncing ? (
             <Loader2 className="size-3 animate-spin" />
           ) : syncSuccess ? (
             <Check className="size-3 text-status-nominal" />
-          ) : isDaytonaMode ? (
+          ) : isSandboxMode ? (
             <FolderSync className="size-3" />
           ) : workspaceFiles.length > 0 ? (
             <Download className="size-3" />
@@ -682,7 +717,7 @@ function FilesContent(): React.JSX.Element {
             <FolderSync className="size-3" />
           )}
           <span className="ml-1">
-            {isDaytonaMode
+            {isSandboxMode
               ? "Refresh"
               : workspaceFiles.length > 0
                 ? "Sync"
@@ -699,7 +734,7 @@ function FilesContent(): React.JSX.Element {
           <FolderTree className="size-8 mb-2 opacity-50" />
           <span>No workspace files</span>
           <span className="text-xs mt-1">
-            {isDaytonaMode
+            {isSandboxMode
               ? "Sandbox is empty"
               : workspacePath
                 ? `Linked to ${workspacePath.split("/").pop()}`

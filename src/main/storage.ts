@@ -220,3 +220,42 @@ export function deleteDaytonaCredentials(): void {
 export function hasDaytonaCredentials(): boolean {
   return !!getDaytonaCredentials()
 }
+
+// E2B credentials management (API key only)
+const E2B_API_KEY = "E2B_API_KEY"
+
+export interface E2BCredentials {
+  apiKey: string
+}
+
+export function getE2BCredentials(): E2BCredentials | undefined {
+  const env = parseEnvFile()
+  const apiKey = env[E2B_API_KEY] || process.env[E2B_API_KEY]
+
+  if (apiKey) {
+    return { apiKey }
+  }
+  return undefined
+}
+
+export function setE2BCredentials(apiKey: string): void {
+  const env = parseEnvFile()
+  env[E2B_API_KEY] = apiKey
+  writeEnvFile(env)
+
+  // Also set in process.env for current session
+  process.env[E2B_API_KEY] = apiKey
+}
+
+export function deleteE2BCredentials(): void {
+  const env = parseEnvFile()
+  delete env[E2B_API_KEY]
+  writeEnvFile(env)
+
+  // Also clear from process.env
+  delete process.env[E2B_API_KEY]
+}
+
+export function hasE2BCredentials(): boolean {
+  return !!getE2BCredentials()
+}

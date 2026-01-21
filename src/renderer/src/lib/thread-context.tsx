@@ -39,6 +39,7 @@ export interface ThreadState {
   workspaceFiles: FileInfo[]
   workspacePath: string | null
   daytonaSandboxId: string | null
+  e2bSandboxId: string | null
   subagents: Subagent[]
   pendingApproval: HITLRequest | null
   error: string | null
@@ -67,6 +68,7 @@ export interface ThreadActions {
   setWorkspaceFiles: (files: FileInfo[] | ((prev: FileInfo[]) => FileInfo[])) => void
   setWorkspacePath: (path: string | null) => void
   setDaytonaSandboxId: (sandboxId: string | null) => void
+  setE2bSandboxId: (sandboxId: string | null) => void
   setSubagents: (subagents: Subagent[]) => void
   setPendingApproval: (request: HITLRequest | null) => void
   setError: (error: string | null) => void
@@ -96,6 +98,7 @@ const createDefaultThreadState = (): ThreadState => ({
   workspaceFiles: [],
   workspacePath: null,
   daytonaSandboxId: null,
+  e2bSandboxId: null,
   subagents: [],
   pendingApproval: null,
   error: null,
@@ -445,6 +448,9 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         setDaytonaSandboxId: (sandboxId: string | null) => {
           updateThreadState(threadId, () => ({ daytonaSandboxId: sandboxId }))
         },
+        setE2bSandboxId: (sandboxId: string | null) => {
+          updateThreadState(threadId, () => ({ e2bSandboxId: sandboxId }))
+        },
         setSubagents: (subagents: Subagent[]) => {
           updateThreadState(threadId, () => ({ subagents }))
         },
@@ -516,18 +522,25 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     async (threadId: string) => {
       const actions = getThreadActions(threadId)
 
-      // Load workspace path, Daytona sandbox, and thread metadata
+      // Load workspace path, sandbox settings, and thread metadata
       try {
         const thread = await window.api.threads.get(threadId)
         if (thread) {
           const metadata = thread.metadata || {}
-          // Check for Daytona sandbox first
-          if (metadata.daytonaSandboxId) {
+          // Check for E2B sandbox first
+          if (metadata.e2bSandboxId) {
+            actions.setE2bSandboxId(metadata.e2bSandboxId as string)
+            actions.setDaytonaSandboxId(null)
+            actions.setWorkspacePath(null)
+          // Then check for Daytona sandbox
+          } else if (metadata.daytonaSandboxId) {
             actions.setDaytonaSandboxId(metadata.daytonaSandboxId as string)
-            // Clear local workspace when using Daytona
+            actions.setE2bSandboxId(null)
             actions.setWorkspacePath(null)
           } else if (metadata.workspacePath) {
             actions.setWorkspacePath(metadata.workspacePath as string)
+            actions.setDaytonaSandboxId(null)
+            actions.setE2bSandboxId(null)
             const diskResult = await window.api.workspace.loadFromDisk(threadId)
             if (diskResult.success) {
               actions.setWorkspaceFiles(diskResult.files)

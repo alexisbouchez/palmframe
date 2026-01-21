@@ -213,6 +213,55 @@ const api = {
       return ipcRenderer.invoke("daytona:listFiles", { sandboxId, path })
     }
   },
+  e2b: {
+    hasCredentials: (): Promise<boolean> => {
+      return ipcRenderer.invoke("e2b:hasCredentials")
+    },
+    getCredentials: (): Promise<{ hasApiKey: boolean } | null> => {
+      return ipcRenderer.invoke("e2b:getCredentials")
+    },
+    setCredentials: (apiKey: string): Promise<void> => {
+      return ipcRenderer.invoke("e2b:setCredentials", { apiKey })
+    },
+    deleteCredentials: (): Promise<void> => {
+      return ipcRenderer.invoke("e2b:deleteCredentials")
+    },
+    listSandboxes: (): Promise<{
+      error?: string
+      sandboxes: Array<{
+        sandboxId: string
+        templateId?: string
+        startedAt?: string
+        metadata?: Record<string, string>
+      }>
+    }> => {
+      return ipcRenderer.invoke("e2b:listSandboxes")
+    },
+    createSandbox: (options?: {
+      template?: string
+      timeoutMs?: number
+    }): Promise<{ sandboxId?: string; templateId?: string; error?: string }> => {
+      return ipcRenderer.invoke("e2b:createSandbox", options || {})
+    },
+    killSandbox: (sandboxId: string): Promise<{ success?: boolean; error?: string }> => {
+      return ipcRenderer.invoke("e2b:killSandbox", { sandboxId })
+    },
+    setTimeout: (
+      sandboxId: string,
+      timeoutMs: number
+    ): Promise<{ success?: boolean; error?: string }> => {
+      return ipcRenderer.invoke("e2b:setTimeout", { sandboxId, timeoutMs })
+    },
+    listFiles: (
+      sandboxId: string,
+      path?: string
+    ): Promise<{
+      files: Array<{ path: string; is_dir: boolean; size?: number; modified_at?: string }>
+      error?: string
+    }> => {
+      return ipcRenderer.invoke("e2b:listFiles", { sandboxId, path })
+    }
+  },
   workspace: {
     get: (threadId?: string): Promise<string | null> => {
       return ipcRenderer.invoke("workspace:get", threadId)
