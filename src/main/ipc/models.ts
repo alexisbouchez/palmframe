@@ -295,12 +295,12 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     store.set("defaultModel", modelId)
   })
 
-  // Set API key for a provider (stored in ~/.openwork/.env)
+  // Set API key for a provider (stored in ~/.palmframe/.env, falls back to legacy ~/.openwork/.env)
   ipcMain.handle("models:setApiKey", async (_event, { provider, apiKey }: SetApiKeyParams) => {
     setApiKey(provider, apiKey)
   })
 
-  // Get API key for a provider (from ~/.openwork/.env or process.env)
+  // Get API key for a provider (from ~/.palmframe/.env, legacy ~/.openwork/.env, or process.env)
   ipcMain.handle("models:getApiKey", async (_event, provider: string) => {
     return getApiKey(provider) ?? null
   })

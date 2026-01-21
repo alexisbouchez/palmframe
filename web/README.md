@@ -2,6 +2,29 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment
+
+Create a `.env` file in `web/` with:
+
+```txt
+DATABASE_URL=postgres://user:password@localhost:5432/palmframe
+BETTER_AUTH_SECRET=replace-with-32+char-secret
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+```
+
+`NEXT_PUBLIC_BETTER_AUTH_URL` is optional when the client runs on the same origin.
+
+### Better Auth schema
+
+Generate the Better Auth tables before running the app:
+
+```bash
+pnpm dlx @better-auth/cli@latest generate
+pnpm db:generate
+pnpm db:migrate
+```
+
 First, run the development server:
 
 ```bash

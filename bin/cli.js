@@ -1,33 +1,34 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
- * openwork CLI - Launches the Electron app
+ * Palmframe CLI - Launches the Electron app
  */
 
 const { spawn } = require("child_process")
 const path = require("path")
 
 // Set process title for Activity Monitor
-process.title = "openwork"
+process.title = "palmframe"
 
 const args = process.argv.slice(2)
+const cliName = path.basename(process.argv[1] || "palmframe")
 
 // Handle --version flag
 if (args.includes("--version") || args.includes("-v")) {
   const { version } = require("../package.json")
-  console.log(`openwork v${version}`)
+  console.log(`${cliName} v${version}`)
   process.exit(0)
 }
 
 // Handle --help flag
 if (args.includes("--help") || args.includes("-h")) {
   console.log(`
-openwork - A tactical agent interface for deepagentsjs
+Palmframe - A tactical agent interface for deepagentsjs
 
 Usage:
-  openwork              Launch the application
-  openwork --version    Show version
-  openwork --help       Show this help
+  ${cliName}              Launch the application
+  ${cliName} --version    Show version
+  ${cliName} --help       Show this help
 `)
   process.exit(0)
 }
@@ -59,6 +60,6 @@ child.on("close", (code) => {
 })
 
 child.on("error", (err) => {
-  console.error("Failed to start openwork:", err.message)
+  console.error(`Failed to start ${cliName}:`, err.message)
   process.exit(1)
 })

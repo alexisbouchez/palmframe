@@ -3,8 +3,15 @@ import { join } from "path"
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from "fs"
 import type { ProviderId } from "./types"
 
-const OPENWORK_DIR = join(homedir(), ".openwork")
-const ENV_FILE = join(OPENWORK_DIR, ".env")
+const PALMFRAME_DIR = join(homedir(), ".palmframe")
+const LEGACY_DIR = join(homedir(), ".openwork")
+
+function resolveAppDir(): string {
+  if (existsSync(PALMFRAME_DIR)) return PALMFRAME_DIR
+  if (existsSync(LEGACY_DIR)) return LEGACY_DIR
+  mkdirSync(PALMFRAME_DIR, { recursive: true })
+  return PALMFRAME_DIR
+}
 
 // Environment variable names for each provider
 const ENV_VAR_NAMES: Record<ProviderId, string> = {
@@ -16,22 +23,21 @@ const ENV_VAR_NAMES: Record<ProviderId, string> = {
 }
 
 export function getOpenworkDir(): string {
-  if (!existsSync(OPENWORK_DIR)) {
-    mkdirSync(OPENWORK_DIR, { recursive: true })
-  }
-  return OPENWORK_DIR
+  return resolveAppDir()
 }
 
 export function getDbPath(): string {
-  return join(getOpenworkDir(), "openwork.sqlite")
+  const dir = resolveAppDir()
+  const dbName = dir === LEGACY_DIR ? "openwork.sqlite" : "palmframe.sqlite"
+  return join(dir, dbName)
 }
 
 export function getCheckpointDbPath(): string {
-  return join(getOpenworkDir(), "langgraph.sqlite")
+  return join(resolveAppDir(), "langgraph.sqlite")
 }
 
 export function getThreadCheckpointDir(): string {
-  const dir = join(getOpenworkDir(), "threads")
+  const dir = join(resolveAppDir(), "threads")
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }
@@ -50,7 +56,7 @@ export function deleteThreadCheckpoint(threadId: string): void {
 }
 
 export function getEnvFilePath(): string {
-  return ENV_FILE
+  return join(resolveAppDir(), ".env")
 }
 
 // Read .env file and parse into object

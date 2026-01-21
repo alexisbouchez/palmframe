@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useAppStore } from "@/lib/store"
 import { useThreadStream } from "@/lib/thread-context"
 import { cn, formatRelativeTime, truncate } from "@/lib/utils"
+import { AuthPanel } from "@/components/auth/AuthPanel"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -189,6 +190,9 @@ export function ThreadSidebar(): React.JSX.Element {
       </ScrollArea>
 
       <div className="p-2 border-t border-border">
+        <div className="mb-2">
+          <AuthPanel />
+        </div>
         <div className="text-[10px] text-muted-foreground text-center">
           Palmframe Web
         </div>

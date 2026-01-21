@@ -11,6 +11,7 @@ if (!connectionString) {
 // For query purposes
 const queryClient = postgres(connectionString)
 export const db = drizzle(queryClient, { schema })
+export const authDb = drizzle(queryClient)
 
 // Export schema for use in API routes
 export { schema }

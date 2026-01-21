@@ -1,27 +1,30 @@
-# openwork
+# Palmframe
 
 [![npm][npm-badge]][npm-url] [![License: MIT][license-badge]][license-url]
 
-[npm-badge]: https://img.shields.io/npm/v/openwork.svg
-[npm-url]: https://www.npmjs.com/package/openwork
+[npm-badge]: https://img.shields.io/npm/v/palmframe.svg
+[npm-url]: https://www.npmjs.com/package/palmframe
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
 
 A desktop interface for [deepagentsjs](https://github.com/langchain-ai/deepagentsjs) — an opinionated harness for building deep agents with filesystem capabilities planning, and subagent delegation.
 
-![openwork screenshot](docs/screenshot.png)
+![Palmframe screenshot](docs/screenshot.png)
 
 > [!CAUTION]
-> openwork gives AI agents direct access to your filesystem and the ability to execute shell commands. Always review tool calls before approving them, and only run in workspaces you trust.
+> Palmframe gives AI agents direct access to your filesystem and the ability to execute shell commands. Always review tool calls before approving them, and only run in workspaces you trust.
 
 ## Get Started
 
 ```bash
 # Run directly with npx
-npx openwork
+npx palmframe
 
 # Or install globally
-npm install -g openwork
+npm install -g palmframe
+palmframe
+
+# Legacy command (still supported)
 openwork
 ```
 
@@ -30,8 +33,8 @@ Requires Node.js 18+.
 ### From Source
 
 ```bash
-git clone https://github.com/langchain-ai/openwork.git
-cd openwork
+git clone https://github.com/langchain-ai/palmframe.git
+cd palmframe
 npm install
 npm run dev
 ```
@@ -51,7 +54,7 @@ Or configure them in-app via the settings panel.
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-Report bugs via [GitHub Issues](https://github.com/langchain-ai/openwork/issues).
+Report bugs via [GitHub Issues](https://github.com/langchain-ai/palmframe/issues).
 
 ## License
 

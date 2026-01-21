@@ -1,7 +1,7 @@
 {
-  "name": "openwork",
+  "name": "palmframe",
   "version": "0.1.0",
-  "description": "A tactical agent interface for deepagentsjs",
+  "description": "Palmframe - a tactical agent interface for deepagentsjs",
   "main": "./out/main/index.js",
   "files": [
     "out/",
@@ -11,17 +11,18 @@
     "README.md"
   ],
   "bin": {
+    "palmframe": "./bin/cli.js",
     "openwork": "./bin/cli.js"
   },
   "author": "LangChain",
   "license": "MIT",
-  "homepage": "https://github.com/langchain-ai/openwork",
+  "homepage": "https://github.com/langchain-ai/palmframe",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/langchain-ai/openwork.git"
+    "url": "git+https://github.com/langchain-ai/palmframe.git"
   },
   "bugs": {
-    "url": "https://github.com/langchain-ai/openwork/issues"
+    "url": "https://github.com/langchain-ai/palmframe/issues"
   },
   "keywords": [
     "ai",
