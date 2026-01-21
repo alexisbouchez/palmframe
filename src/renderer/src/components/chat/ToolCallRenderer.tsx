@@ -696,7 +696,8 @@ export function ToolCallRenderer({
               <div className="text-xs text-status-nominal flex items-center gap-1.5">
                 <CheckCircle2 className="size-3" />
                 <span>
-                  Found {posts.length} post{posts.length !== 1 ? "s" : ""} for "{data.query}"
+                  Found {posts.length} post{posts.length !== 1 ? "s" : ""} for &ldquo;{data.query}
+                  &rdquo;
                 </span>
               </div>
               {posts.length > 0 && <BlueskyPostsDisplay posts={posts} />}
