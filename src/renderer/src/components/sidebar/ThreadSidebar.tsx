@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/context-menu"
 import { BlueskyCredentialsDialog } from "@/components/chat/BlueskyCredentialsDialog"
 import { DaytonaCredentialsDialog } from "@/components/chat/DaytonaCredentialsDialog"
+import { E2BCredentialsDialog } from "@/components/chat/E2BCredentialsDialog"
 import type { Thread } from "@/types"
 
 // Bluesky icon component
@@ -31,6 +32,17 @@ function DaytonaIcon({ className }: { className?: string }): React.JSX.Element {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
+  )
+}
+
+// E2B icon component (box/cube shape)
+function E2BIcon({ className }: { className?: string }): React.JSX.Element {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+      <path d="m3.3 7 8.7 5 8.7-5" />
+      <path d="M12 22V12" />
     </svg>
   )
 }
@@ -149,6 +161,7 @@ export function ThreadSidebar(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [blueskyDialogOpen, setBlueskyDialogOpen] = useState(false)
   const [daytonaDialogOpen, setDaytonaDialogOpen] = useState(false)
+  const [e2bDialogOpen, setE2bDialogOpen] = useState(false)
 
   const startEditing = (threadId: string, currentTitle: string): void => {
     setEditingThreadId(threadId)
@@ -247,12 +260,23 @@ export function ThreadSidebar(): React.JSX.Element {
               <DaytonaIcon className="size-4" />
               <span>Daytona</span>
             </button>
+            <button
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-sm text-left hover:bg-muted transition-colors"
+              onClick={() => {
+                setSettingsOpen(false)
+                setE2bDialogOpen(true)
+              }}
+            >
+              <E2BIcon className="size-4" />
+              <span>E2B</span>
+            </button>
           </PopoverContent>
         </Popover>
       </div>
 
       <BlueskyCredentialsDialog open={blueskyDialogOpen} onOpenChange={setBlueskyDialogOpen} />
       <DaytonaCredentialsDialog open={daytonaDialogOpen} onOpenChange={setDaytonaDialogOpen} />
+      <E2BCredentialsDialog open={e2bDialogOpen} onOpenChange={setE2bDialogOpen} />
     </aside>
   )
 }
