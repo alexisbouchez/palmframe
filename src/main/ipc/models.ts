@@ -30,6 +30,7 @@ import {
   deleteE2BCredentials,
   hasE2BCredentials
 } from "../storage"
+import { getThread, updateThread } from "../db"
 import { createDaytonaClient } from "../agent/daytona-sandbox"
 import { Sandbox as E2BSandbox } from "e2b"
 
@@ -701,7 +702,6 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     }
 
     // Get from thread metadata via threads:get
-    const { getThread } = await import("../db")
     const thread = getThread(threadId)
     if (!thread?.metadata) return null
 
@@ -723,7 +723,6 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
         return newPath
       }
 
-      const { getThread, updateThread } = await import("../db")
       const thread = getThread(threadId)
       if (!thread) return null
 
@@ -757,7 +756,6 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     const selectedPath = result.filePaths[0]
 
     if (threadId) {
-      const { getThread, updateThread } = await import("../db")
       const thread = getThread(threadId)
       if (thread) {
         const metadata = thread.metadata ? JSON.parse(thread.metadata) : {}
@@ -777,8 +775,6 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
 
   // Load files from disk into the workspace view
   ipcMain.handle("workspace:loadFromDisk", async (_event, { threadId }: WorkspaceLoadParams) => {
-    const { getThread } = await import("../db")
-
     // Get workspace path from thread metadata
     const thread = getThread(threadId)
     const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
@@ -850,8 +846,6 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(
     "workspace:readFile",
     async (_event, { threadId, filePath }: WorkspaceFileParams) => {
-      const { getThread } = await import("../db")
-
       // Get workspace path and sandbox IDs from thread metadata
       const thread = getThread(threadId)
       const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}
@@ -965,8 +959,6 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(
     "workspace:readBinaryFile",
     async (_event, { threadId, filePath }: WorkspaceFileParams) => {
-      const { getThread } = await import("../db")
-
       // Get workspace path and sandbox IDs from thread metadata
       const thread = getThread(threadId)
       const metadata = thread?.metadata ? JSON.parse(thread.metadata) : {}

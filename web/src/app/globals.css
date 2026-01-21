@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Radius scale */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 1px);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 4px);
+
+  /* Foundation colors */
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-background-interactive: var(--background-interactive);
+  --color-foreground: var(--foreground);
+
+  /* Component colors */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+
+  /* Border colors */
+  --color-border: var(--border);
+  --color-border-emphasis: var(--border-emphasis);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Status colors */
+  --color-status-critical: var(--status-critical);
+  --color-status-warning: var(--status-warning);
+  --color-status-nominal: var(--status-nominal);
+  --color-status-info: var(--status-info);
+
+  /* Sidebar colors */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  /* Foundation */
+  --radius: 3px;
+  --background: #0d0d0f;
+  --background-elevated: #141418;
+  --background-interactive: #1c1c22;
+  --foreground: #e8e8ec;
+
+  /* Borders */
+  --border: #2a2a32;
+  --border-emphasis: #3a3a45;
+  --input: #2a2a32;
+  --ring: #3b82f6;
+
+  /* Text hierarchy */
+  --muted: #141418;
+  --muted-foreground: #8a8a96;
+  --tertiary-foreground: #5a5a66;
+
+  /* Semantic mapping */
+  --card: #141418;
+  --card-foreground: #e8e8ec;
+  --popover: #141418;
+  --popover-foreground: #e8e8ec;
+  --primary: #3b82f6;
+  --primary-foreground: #e8e8ec;
+  --secondary: #1c1c22;
+  --secondary-foreground: #e8e8ec;
+  --accent: #fb923c;
+  --accent-foreground: #0d0d0f;
+  --destructive: #e53e3e;
+
+  /* Status colors */
+  --status-critical: #e53e3e;
+  --status-warning: #f59e0b;
+  --status-nominal: #22c55e;
+  --status-info: #3b82f6;
+
+  /* Sidebar */
+  --sidebar: #141418;
+  --sidebar-foreground: #e8e8ec;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #e8e8ec;
+  --sidebar-accent: #1c1c22;
+  --sidebar-accent-foreground: #e8e8ec;
+  --sidebar-border: #2a2a32;
+  --sidebar-ring: #3b82f6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  }
+}
+
+/* Typography utilities */
+.text-section-header {
+  @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-emphasis);
+}
+
+/* Streaming markdown styles */
+.streaming-markdown {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.streaming-markdown p {
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.streaming-markdown h1,
+.streaming-markdown h2,
+.streaming-markdown h3,
+.streaming-markdown h4 {
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.streaming-markdown h1 { font-size: 1.5em; }
+.streaming-markdown h2 { font-size: 1.25em; }
+.streaming-markdown h3 { font-size: 1.125em; }
+.streaming-markdown h4 { font-size: 1em; }
+
+.streaming-markdown ul,
+.streaming-markdown ol {
+  margin-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown ul { list-style-type: disc; }
+.streaming-markdown ol { list-style-type: decimal; }
+.streaming-markdown li { margin-bottom: 0.25em; }
+
+.streaming-markdown code {
+  background-color: var(--background);
+  padding: 0.125em 0.25em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+.streaming-markdown pre {
+  background-color: var(--background);
+  padding: 0.75em 1em;
+  border-radius: 3px;
+  overflow-x: auto;
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.streaming-markdown blockquote {
+  border-left: 3px solid var(--border-emphasis);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 0.75em;
+  color: var(--muted-foreground);
+}
+
+.streaming-markdown a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.streaming-markdown a:hover {
+  opacity: 0.8;
+}
